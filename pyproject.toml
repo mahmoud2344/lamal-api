@@ -1,0 +1,79 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "lamal-api"
+version = "0.1.0"
+description = "Self-hostable REST API for Swiss mandatory health insurance (LAMal/KVG) premiums, built on official FOPH/BAG open data."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+keywords = ["switzerland", "health-insurance", "lamal", "kvg", "opendata", "premiums", "api"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Framework :: FastAPI",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Office/Business :: Financial",
+]
+
+# Deliberately small. No pandas: the stdlib `csv` module streams the 22 MB
+# premium file in a couple of seconds and keeps the Docker image ~40 MB lighter.
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "sqlalchemy>=2.0",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.6",
+    "httpx>=0.27",
+    "openpyxl>=3.1",
+    "apscheduler>=3.10,<4",
+]
+
+[project.optional-dependencies]
+postgres = ["psycopg[binary]>=3.2"]
+dev = [
+    "pytest>=8.3",
+    "pytest-cov>=6.0",
+    "ruff>=0.8",
+    "mypy>=1.13",
+    "types-openpyxl",
+]
+
+[project.urls]
+Homepage = "https://github.com/mahmoud2344/lamal-api"
+Issues = "https://github.com/mahmoud2344/lamal-api/issues"
+
+[project.scripts]
+lamal-api = "lamal_api.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/lamal_api"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "C4", "SIM", "RUF"]
+ignore = ["RUF001", "RUF002", "RUF003"]  # German/French text contains ambiguous unicode
+
+[tool.mypy]
+python_version = "3.11"
+packages = ["lamal_api"]
+mypy_path = "src"
+strict = true
+warn_return_any = true
+
+[[tool.mypy.overrides]]
+module = ["apscheduler.*", "openpyxl.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --strict-markers"
+markers = ["network: test requires internet access to official data sources"]

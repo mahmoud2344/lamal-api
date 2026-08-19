@@ -1,0 +1,26 @@
+﻿Versicherer;Geschäftsjahr;Erhebungsjahr;Kategorie;Tarif;Tariftyp;Sort.-Nr.;Name_DE;Name_FR;Name_IT
+0008;2026;2025;MOD;01_016;HAM;475;Gesundheitspraxisversicherung;Gesundheitspraxisversicherung;Gesundheitspraxisversicherung
+0008;2026;2025;MOD;01_170;HAM;489;Multimed;Multimed;Multimed
+0312;2026;2025;MOD;HMO;HMO;657;HMO;HMO;HMO
+0455;2026;2025;MOD;HAM_CBA;HAM;574;Hausarzt;Médecin de famille;Medico di famiglia
+0455;2026;2025;MOD;HMO_Kt;HMO;580;Gesundheitszentrum;Centre de santé;Centro sanitario
+0509;2026;2025;MOD;DIV_XBA;DIV;29;FlexHelp 24;FlexHelp 24;FlexHelp 24
+1384;2026;2025;MOD;HMO;HMO;1081;FAVORIT SANTE;FAVORIT SANTE;FAVORIT SANTE
+1384;2026;2025;MOD;MULTICHOICE;HAM;1025;FAVORIT MULTICHOICE;FAVORIT MULTICHOICE;FAVORIT MULTICHOICE
+1386;2026;2025;MOD;COC;DIV;4;Combi Care;Combi Care;Combi Care
+1509;2026;2025;MOD;TelMed (Compact One);DIV;709;TelMed (Compact One);TelMed (Compact One);TelMed (Compact One)
+1542;2026;2025;MOD;BASE;BASE;1;Grundversicherung;Assurance de base;Assicurazione di base
+1542;2026;2025;MOD;QM;HAM;732;Qualimed;Qualimed;Qualimed
+1542;2026;2025;MOD;RPH;HAM;735;PharMed;PharMed;PharMed
+1555;2026;2025;MOD;BASE;BASE;1;Grundversicherung;Assurance de base;Assicurazione di base
+1555;2026;2025;MOD;COC;DIV;808;Combi Care;Combi Care;Combi Care
+1555;2026;2025;MOD;HMO_PLUS;HMO;785;HMO plus;HMO plus;HMO plus
+1555;2026;2025;MOD;MCA;DIV;814;Med Call;Visana Med Call;Visana Med Call
+1555;2026;2025;MOD;MCMIT;HMO;788;Managed Care;Managed Care;Managed Care
+1555;2026;2025;MOD;MD;HAM;346;Med Direct;Med Direct;Med Direct
+1555;2026;2025;MOD;TCA;DIV;826;Tel Care;Tel Care;Tel Care
+1555;2026;2025;MOD;TDO;DIV;829;Tel Doc;Visana Tel Doc;Visana Tel Doc
+1555;2026;2025;MOD;VIVA;HMO;786;VIVA – Gesundheitsplan;VIVA – plan de santé;VIVA – piano sanitario
+1560;2026;2025;MOD;AGRIcontact;DIV;142;AGRIcontact;AGRIcontact;AGRIcontact
+1562;2026;2025;MOD;BFP_CP;HAM;792;BeneFit PLUS Hausarzt R1;BeneFit PLUS Médecin de famille R1;BeneFit PLUS Medico di famiglia R1
+1562;2026;2025;MOD;BFP_CPF;HAM;797;BeneFit PLUS Flexmed R1;BeneFit PLUS Flexmed R1;BeneFit PLUS Flexmed R1

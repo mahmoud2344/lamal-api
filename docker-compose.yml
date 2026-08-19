@@ -1,0 +1,65 @@
+# lamal-api — one command to a working Swiss premium API:
+#
+#     docker compose up -d
+#
+# The container starts serving immediately and downloads the official data in
+# the background (~23 MB, about a minute). Watch it with:
+#
+#     docker compose logs -f
+#
+# Then try:
+#
+#     curl "http://localhost:8000/v1/premiums?postal_code=1003&birth_year=1990&franchise=2500&accident_coverage=false"
+
+services:
+  api:
+    build:
+      context: .
+    image: lamal-api:latest
+    container_name: lamal-api
+    restart: unless-stopped
+    ports:
+      - "${PORT:-8000}:8000"
+    volumes:
+      # Holds the SQLite database. Remove it to force a clean re-sync.
+      - lamal-data:/data
+    environment:
+      DATABASE_URL: "sqlite:////data/lamal.db"
+
+      # Fetch the data on first boot so `docker compose up -d` is genuinely
+      # all that is needed. It runs on a worker thread; the API answers
+      # /health straight away and reports data_loaded=false until it lands.
+      SYNC_ON_STARTUP: "true"
+
+      # Refresh weekly, Monday 03:17 UTC. New premium years are published in
+      # late September and are picked up automatically. Leave empty to disable
+      # the in-process scheduler and drive `lamal-api sync` from your own cron.
+      SYNC_CRON: "17 3 * * 1"
+
+      # Premium years to keep loaded. Empty means "whatever year is currently
+      # published". Set e.g. "2024-2026" to also backfill from the official
+      # yearly archives.
+      SYNC_YEARS: ""
+
+      LOG_LEVEL: "INFO"
+      CORS_ORIGINS: "*"
+
+      # Off by default. Set a number to cap requests per IP per minute.
+      RATE_LIMIT_PER_MINUTE: "0"
+
+      # Only needed behind a TLS-inspecting corporate proxy: mount a PEM
+      # bundle and point at it, otherwise federal downloads fail to verify.
+      # CA_BUNDLE: "/data/corporate-ca.pem"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health',timeout=8).status==200 else 1)"
+      interval: 30s
+      timeout: 10s
+      start_period: 20s
+      retries: 3
+
+volumes:
+  lamal-data:

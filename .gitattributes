@@ -1,0 +1,17 @@
+# Normalise line endings so Windows contributors, Linux CI and the Docker
+# build all see the same bytes. Without this, a CRLF checkout can break shell
+# scripts and container entrypoints.
+* text=auto eol=lf
+
+# Test fixtures are verbatim excerpts of the federal CSV files, which use LF.
+# Pinning them keeps the reader and encoding tests byte-identical everywhere.
+tests/fixtures/*.csv text eol=lf
+
+# Never touched by end-of-line conversion.
+*.png binary
+*.jpg binary
+*.ico binary
+*.xlsx binary
+*.xls binary
+*.zip binary
+*.db binary

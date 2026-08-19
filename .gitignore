@@ -1,0 +1,33 @@
+# Official data is never committed — it is always fetched from source.
+data/
+*.db
+*.db-wal
+*.db-shm
+*.csv
+*.xlsx
+*.xls
+*.zip
+!tests/fixtures/*.csv
+
+# Environment
+.env
+.venv/
+venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
