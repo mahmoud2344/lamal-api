@@ -2,6 +2,6 @@
 
 from __future__ import annotations
 
-from . import premiums, reference, regions
+from . import households, premiums, reference, regions
 
-__all__ = ["premiums", "reference", "regions"]
+__all__ = ["households", "premiums", "reference", "regions"]

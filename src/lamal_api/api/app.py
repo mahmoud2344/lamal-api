@@ -18,7 +18,7 @@ from ..config import Settings, get_settings
 from ..db.engine import create_db_engine, init_schema
 from ..domain.errors import LamalError
 from ..scheduler import start_background_sync, start_scheduler
-from .routers import premiums, reference, regions
+from .routers import households, premiums, reference, regions
 
 log = logging.getLogger(__name__)
 
@@ -130,6 +130,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return RedirectResponse(url=f"{settings.root_path}/docs")
 
     app.include_router(premiums.router)
+    app.include_router(households.router)
     app.include_router(regions.router)
     app.include_router(reference.router)
     return app

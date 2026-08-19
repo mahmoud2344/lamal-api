@@ -2,7 +2,7 @@
 
 # Verification scenarios
 
-Thirteen scenarios that check `lamal-api` against the federal comparator at
+Eleven scenarios that check `lamal-api` against the federal comparator at
 priminfo.admin.ch. Each one gives you **the exact priminfo query** and **the exact API call**,
 so you can run both and compare without re-deriving anything.
 
@@ -60,6 +60,7 @@ priminfo shows 27 rows, 6 of them empty, and the API returns 21.
 | [8](#8--commune-restricted-model) | Aefligen vs Aarberg | Catchment-area filtering |
 | [9](#9--ambiguous-postal-code) | Postal code 2814 | 409 instead of a wrong guess |
 | [10](#10--eu--efta-cross-border) | Resident in France | EU premium table |
+| [11](#11--household-sibling-discounts) | Families of 1–5 children | Sibling discounts, both mechanisms |
 
 ---
 
@@ -329,6 +330,60 @@ Mutuel `348.80`. Only the standard model exists abroad; there is no regional spl
 > **no equivalent comparator query**. It comes from `Prämien_EU.csv`; to check it by hand, use
 > [gesamtbericht_eu.xlsx](https://www.priminfo.admin.ch/downloads/gesamtbericht_eu.xlsx) from
 > the priminfo downloads page.
+
+---
+
+## 11 — Household sibling discounts
+
+The one rule that cannot be checked one person at a time. Add people on priminfo with
+**"Weitere Person hinzufügen"**; on the API repeat the `person` parameter.
+
+Household: one adult born 1985 (franchise 300, no accident) plus *N* children born
+2013/2015/2017/2019/2021 (franchise 0, with accident), Zürich `8001`, standard model only.
+
+**priminfo** — [1 adult + 3 children](https://www.priminfo.admin.ch/de/praemien?location_id=80011450512497&yob%5B0%5D=1985&franchise%5B0%5D=300&coverage%5B0%5D=0&yob%5B1%5D=2013&franchise%5B1%5D=0&coverage%5B1%5D=1&yob%5B2%5D=2015&franchise%5B2%5D=0&coverage%5B2%5D=1&yob%5B3%5D=2017&franchise%5B3%5D=0&coverage%5B3%5D=1&models%5B%5D=BASE&display=savings)
+· with several people it renders **one table per insurer**, listing every person and a
+combined *"Alle Personen"* row.
+
+**API**
+
+```bash
+curl -s "http://localhost:8000/v1/households?postal_code=8001&tariff_type=BASE\
+&person=1985:300:false&person=2013:0:true&person=2015:0:true&person=2017:0:true"
+```
+
+**Expected — two different mechanisms, per insurer:**
+
+| children | Sumiswalder (194) · `K1`+`K3` | SWICA (1384) · `K1`+`K3` | Assura (1542) · `K1`+`K4`+`K5` |
+|---|---|---|---|
+| 1 | 141.60 | 156.80 | 144.90 |
+| 2 | 141.60, 141.60 | 156.80, 156.80 | **142.90 ×2** |
+| 3 | 141.60, 141.60, **70.80** | 156.80, 156.80, **65.40** | **140.90 ×3** |
+| 5 | 141.60, 141.60, 70.80, 70.80, 70.80 | 156.80, 156.80, 65.40 ×3 | 140.90 ×5 |
+
+* **Rank-based (`K3`, labelled *"ab 3. Kind"*)** — only the third and later children get the
+  cheaper rate; the first two keep paying `K1`.
+* **Count-based (`K4`/`K5`, labelled *"3 und mehr Kinder"*)** — the household size selects one
+  band that *every* child then pays. Assura has three bands and already discounts at two
+  children.
+
+Household total is a plain sum. Two adults born 1985 and 1988 plus three children with
+Sumiswalder gives **CHF 1'489.20** = 567.60 + 567.60 + 141.60 + 141.60 + 70.80, matching
+priminfo's *"Alle Personen"* row:
+
+```bash
+curl -s "http://localhost:8000/v1/households?postal_code=8001&tariff_type=BASE&insurer=194\
+&person=1985:300:false&person=1988:300:false\
+&person=2015:0:true&person=2017:0:true&person=2019:0:true"
+```
+
+Check `age_subgroup` on each member of the breakdown — that is the tier actually applied.
+
+> **Why this endpoint exists.** Pricing each person through `/v1/premiums` and adding the
+> results returns `K1` for every child, overcharging this family by CHF 70.80/month with
+> Sumiswalder and CHF 12.00 with Assura. The same three-band behaviour is confirmed in
+> Lausanne (Assura 162.00 / 160.00 / 158.00) and on the family-doctor model, so it is not a
+> quirk of one canton or one tariff type.
 
 ---
 

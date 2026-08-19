@@ -141,6 +141,40 @@ Narrow it to Telmed and other alternative models, cheapest first:
 curl -s "http://localhost:8000/v1/premiums?postal_code=1003&birth_year=1990&franchise=2500&accident_coverage=false&tariff_type=DIV"
 ```
 
+### Price a whole family
+
+One address, one insurer per bundle. Repeat `person=birth_year:franchise:accident_coverage`
+for each member; leave the franchise empty (`2015::true`) to take the standard one.
+
+```bash
+curl -s "http://localhost:8000/v1/households?postal_code=8001\
+&person=1985:300:false&person=1988:300:false\
+&person=2015:0:true&person=2017:0:true&person=2019:0:true&tariff_type=BASE"
+```
+
+```jsonc
+{
+  "query": { "premium_year": 2026, "child_count": 3, "people": [ /* ... */ ] },
+  "results": [
+    {
+      "insurer": { "bag_number": 194, "name": "Sumiswalder" },
+      "tariff": { "code": "BASE", "type": "TAR-BASE", "label": "Grundversicherung" },
+      "total_chf": 1489.2,
+      "total_centimes": 148920,
+      "people": [
+        { "index": 1, "birth_year": 1985, "age_class": "AKL-ERW", "age_subgroup": "",   "premium_chf": 567.6 },
+        { "index": 2, "birth_year": 1988, "age_class": "AKL-ERW", "age_subgroup": "",   "premium_chf": 567.6 },
+        { "index": 3, "birth_year": 2015, "age_class": "AKL-KIN", "age_subgroup": "K1", "child_rank": 1, "premium_chf": 141.6 },
+        { "index": 4, "birth_year": 2017, "age_class": "AKL-KIN", "age_subgroup": "K1", "child_rank": 2, "premium_chf": 141.6 },
+        { "index": 5, "birth_year": 2019, "age_class": "AKL-KIN", "age_subgroup": "K3", "child_rank": 3, "premium_chf": 70.8 }
+      ]
+    }
+  ]
+}
+```
+
+Note the third child on `K3` at half the rate — see the sibling-discount rule below.
+
 ### Resolve a postal code to a premium region
 
 ```bash
@@ -271,6 +305,7 @@ All JSON, all versioned under `/v1`. OpenAPI schema at `/openapi.json`, Swagger 
 | Endpoint | Description |
 | --- | --- |
 | `GET /v1/premiums` | **Main endpoint.** Approved premiums for a person and a place. |
+| `GET /v1/households` | A whole family priced together, per insurer, with sibling discounts applied. |
 | `GET /v1/premiums/eu` | Cross-border premiums for people insured in Switzerland but resident in the EU/EFTA/UK. |
 | `GET /v1/regions` | Resolve a postal code or commune to its premium region. |
 | `GET /v1/insurers` | Insurers offering basic insurance, with the cantons they operate in. |
@@ -319,6 +354,16 @@ on 31 December.
 **Children default to age subgroup `K1`.** `K3`/`K4`/`K5` are sibling discount tiers that
 only apply when several children are insured together. They are materially cheaper, so
 defaulting to one of them would quote prices a household is not entitled to.
+
+**Sibling discounts work in two different ways, and `/v1/households` implements both.**
+This is why a family cannot be priced by looking each member up separately and adding the
+results. Insurers publishing `K3` (*"ab 3. Kind"*) are **rank-based**: only the third and
+later children get the cheaper rate, the first two keep paying `K1`. Insurers publishing
+`K4`/`K5` (*"3 und mehr Kinder"*) are **count-based**: once the family reaches a given size,
+*every* child moves to the cheaper band — Assura has three of them. Both were established
+against priminfo across two cantons, two tariff types and households of one to five, and are
+pinned in [`tests/test_household.py`](tests/test_household.py). Adding single-person lookups
+instead overcharges a three-child family by CHF 70.80/month with Sumiswalder alone.
 
 **Franchise scales differ by age class.** Children 0/100/200/300/400/500/600; adults and
 young adults 300/500/1000/1500/2000/2500. Both contain 300 and 500, which is why the age

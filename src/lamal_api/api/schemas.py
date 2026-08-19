@@ -114,6 +114,64 @@ class PremiumSearchResponse(BaseModel):
     )
 
 
+class HouseholdMember(BaseModel):
+    """One person's share of a household bundle."""
+
+    index: int = Field(description="1-based position in the request, as submitted.")
+    birth_year: int
+    age_class: str
+    age_subgroup: str = Field(
+        description="The subgroup actually applied. For children this depends on the "
+        "household: some insurers discount from the third child (K3), others move every "
+        "child to a cheaper band once the family reaches two (K4) or three (K5)."
+    )
+    child_rank: int | None = Field(
+        default=None, description="1-based rank among the household's children; null for adults."
+    )
+    franchise_chf: int
+    franchise_level: str
+    accident_coverage: bool
+    premium_chf: float
+    premium_centimes: int
+
+
+class HouseholdResult(BaseModel):
+    """One insurer and tariff, priced for the whole household."""
+
+    insurer: InsurerRef
+    tariff: TariffRef
+    total_chf: float = Field(description="Sum of every member's monthly premium, in CHF.")
+    total_centimes: int
+    people: list[HouseholdMember]
+
+
+class HouseholdPersonEcho(BaseModel):
+    """A person as requested, with the age class resolved from the birth year."""
+
+    index: int
+    birth_year: int
+    age_class: str
+    child_rank: int | None = None
+    franchise_chf: int
+    accident_coverage: bool
+
+
+class HouseholdQueryEcho(BaseModel):
+    premium_year: int
+    people: list[HouseholdPersonEcho]
+    child_count: int
+    tariff_types: list[str] | None = None
+    insurers: list[int] | None = None
+    location: LocationResolution
+
+
+class HouseholdResponse(BaseModel):
+    query: HouseholdQueryEcho
+    pagination: Pagination
+    results: list[HouseholdResult]
+    notes: list[str] = Field(default_factory=list)
+
+
 class RegionResponse(BaseModel):
     premium_year: int
     region_year: int = Field(

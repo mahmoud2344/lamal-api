@@ -1,10 +1,12 @@
 ﻿Versicherer;Geschäftsjahr;Erhebungsjahr;Kategorie;Tarif;Tariftyp;Sort.-Nr.;Name_DE;Name_FR;Name_IT
 0008;2026;2025;MOD;01_016;HAM;475;Gesundheitspraxisversicherung;Gesundheitspraxisversicherung;Gesundheitspraxisversicherung
 0008;2026;2025;MOD;01_170;HAM;489;Multimed;Multimed;Multimed
+0194;2026;2025;MOD;BASE;BASE;1;Grundversicherung;Assurance de base;Assicurazione di base
 0312;2026;2025;MOD;HMO;HMO;657;HMO;HMO;HMO
 0455;2026;2025;MOD;HAM_CBA;HAM;574;Hausarzt;Médecin de famille;Medico di famiglia
 0455;2026;2025;MOD;HMO_Kt;HMO;580;Gesundheitszentrum;Centre de santé;Centro sanitario
 0509;2026;2025;MOD;DIV_XBA;DIV;29;FlexHelp 24;FlexHelp 24;FlexHelp 24
+1384;2026;2025;MOD;BASE;BASE;1;Grundversicherung;Assurance de base;Assicurazione di base
 1384;2026;2025;MOD;HMO;HMO;1081;FAVORIT SANTE;FAVORIT SANTE;FAVORIT SANTE
 1384;2026;2025;MOD;MULTICHOICE;HAM;1025;FAVORIT MULTICHOICE;FAVORIT MULTICHOICE;FAVORIT MULTICHOICE
 1386;2026;2025;MOD;COC;DIV;4;Combi Care;Combi Care;Combi Care

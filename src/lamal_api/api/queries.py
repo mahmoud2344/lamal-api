@@ -23,6 +23,7 @@ from ..domain.errors import (
     UnknownPostalCodeError,
     UnknownPremiumYearError,
 )
+from ..domain.household import child_subgroup
 from ..domain.rules import valid_franchises
 from . import schemas
 
@@ -430,6 +431,201 @@ def search_premiums(conn: Connection, criteria: PremiumCriteria) -> list[schemas
 # --------------------------------------------------------------------------
 # Reference endpoints
 # --------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class HouseholdPerson:
+    """One member of a household, already resolved to source vocabulary."""
+
+    index: int  # 1-based, input order — mirrors how priminfo numbers people
+    birth_year: int
+    age_class: AgeClass
+    franchise_chf: int
+    accident: str
+    child_rank: int | None  # 1-based among the household's children, None for adults
+
+
+@dataclass(frozen=True)
+class HouseholdCriteria:
+    premium_year: int
+    canton: str
+    region: str
+    bfs_numbers: tuple[int, ...]
+    people: tuple[HouseholdPerson, ...]
+    tariff_types: tuple[str, ...] | None = None
+    insurers: tuple[int, ...] | None = None
+    limit: int = 50
+    offset: int = 0
+
+
+def _person_rows(
+    conn: Connection, criteria: HouseholdCriteria, person: HouseholdPerson
+) -> dict[tuple[int, str], list[Any]]:
+    """Every premium available to one person, grouped by insurer and tariff.
+
+    Children are fetched across *all* subgroups because which one applies is a
+    property of the household, resolved afterwards by
+    :func:`~lamal_api.domain.household.child_subgroup`.
+    """
+    p = models.premium.c
+    base = PremiumCriteria(
+        premium_year=criteria.premium_year,
+        canton=criteria.canton,
+        region=criteria.region,
+        age_class=person.age_class,
+        age_subgroup="",  # not used for filtering here
+        franchise_chf=person.franchise_chf,
+        accident=person.accident,
+        bfs_numbers=criteria.bfs_numbers,
+        tariff_types=criteria.tariff_types,
+        insurers=criteria.insurers,
+    )
+    clauses = [
+        p.premium_year == criteria.premium_year,
+        p.canton == criteria.canton,
+        p.region == criteria.region,
+        p.age_class == person.age_class.value,
+        p.franchise_chf == person.franchise_chf,
+        p.accident == person.accident,
+    ]
+    if criteria.tariff_types:
+        clauses.append(p.tariff_type.in_(criteria.tariff_types))
+    if criteria.insurers:
+        clauses.append(p.insurer_bag_number.in_(criteria.insurers))
+    if person.child_rank is None:
+        clauses.append(p.age_subgroup == "")
+
+    stmt = select(
+        p.insurer_bag_number,
+        p.tariff_code,
+        p.tariff_type,
+        p.tariff_label,
+        p.age_subgroup,
+        p.premium_centimes,
+        p.franchise_level,
+    ).where(*clauses, _exclude_unavailable_models(base))
+
+    grouped: dict[tuple[int, str], list[Any]] = {}
+    for row in conn.execute(stmt):
+        grouped.setdefault((row.insurer_bag_number, row.tariff_code), []).append(row)
+    return grouped
+
+
+def search_households(
+    conn: Connection, criteria: HouseholdCriteria
+) -> tuple[list[schemas.HouseholdResult], int, int]:
+    """Price a whole household per insurer and tariff.
+
+    Returns the page of results, the total number of complete bundles, and how
+    many bundles were dropped because the insurer does not sell every product
+    the household asked for. A bundle only counts when *every* person can be
+    covered by that same insurer and tariff — a partial household has no
+    meaningful total, which is exactly the case priminfo renders as an
+    em-dash.
+    """
+    child_count = sum(1 for person in criteria.people if person.child_rank is not None)
+    per_person = [(person, _person_rows(conn, criteria, person)) for person in criteria.people]
+
+    # Bundles must exist for everyone.
+    common: set[tuple[int, str]] | None = None
+    for _, rows in per_person:
+        keys = set(rows)
+        common = keys if common is None else (common & keys)
+    candidate_keys = common or set()
+
+    bundles: list[tuple[int, schemas.HouseholdResult]] = []
+    incomplete = 0
+
+    for key in candidate_keys:
+        breakdown: list[schemas.HouseholdMember] = []
+        total = 0
+        usable = True
+        insurer_number, tariff_code = key
+        meta_row = None
+
+        for person, rows in per_person:
+            options = rows[key]
+            meta_row = meta_row or options[0]
+            if person.child_rank is None:
+                chosen = options[0]
+            else:
+                available = {row.age_subgroup for row in options}
+                wanted = child_subgroup(person.child_rank, child_count, available)
+                match = next((row for row in options if row.age_subgroup == wanted), None)
+                if match is None:
+                    usable = False
+                    break
+                chosen = match
+
+            total += chosen.premium_centimes
+            breakdown.append(
+                schemas.HouseholdMember(
+                    index=person.index,
+                    birth_year=person.birth_year,
+                    age_class=person.age_class.value,
+                    age_subgroup=chosen.age_subgroup,
+                    child_rank=person.child_rank,
+                    franchise_chf=person.franchise_chf,
+                    franchise_level=chosen.franchise_level,
+                    accident_coverage=person.accident == "MIT-UNF",
+                    premium_chf=chosen.premium_centimes / 100,
+                    premium_centimes=chosen.premium_centimes,
+                )
+            )
+
+        if not usable or meta_row is None:
+            incomplete += 1
+            continue
+
+        bundles.append(
+            (
+                total,
+                schemas.HouseholdResult(
+                    insurer=schemas.InsurerRef(bag_number=insurer_number, name=None),
+                    tariff=schemas.TariffRef(
+                        code=tariff_code,
+                        type=meta_row.tariff_type,
+                        label=meta_row.tariff_label,
+                    ),
+                    total_chf=total / 100,
+                    total_centimes=total,
+                    people=sorted(breakdown, key=lambda m: m.index),
+                ),
+            )
+        )
+
+    bundles.sort(key=lambda item: (item[0], item[1].insurer.bag_number, item[1].tariff.code))
+    page = [result for _, result in bundles[criteria.offset : criteria.offset + criteria.limit]]
+
+    # Fill in insurer names and multilingual tariff names for the page only.
+    if page:
+        names: dict[int, str] = {
+            row.bag_number: row.name
+            for row in conn.execute(
+                select(models.insurer.c.bag_number, models.insurer.c.name).where(
+                    models.insurer.c.bag_number.in_({r.insurer.bag_number for r in page})
+                )
+            )
+        }
+        t = models.tariff.c
+        tariff_names = {
+            (row.insurer_bag_number, row.tariff_code): row
+            for row in conn.execute(
+                select(t.insurer_bag_number, t.tariff_code, t.name_de, t.name_fr, t.name_it).where(
+                    t.premium_year == criteria.premium_year,
+                    t.insurer_bag_number.in_({r.insurer.bag_number for r in page}),
+                )
+            )
+        }
+        for result in page:
+            result.insurer.name = names.get(result.insurer.bag_number)
+            extra = tariff_names.get((result.insurer.bag_number, result.tariff.code))
+            if extra is not None:
+                result.tariff.name_de = extra.name_de
+                result.tariff.name_fr = extra.name_fr
+                result.tariff.name_it = extra.name_it
+
+    return page, len(bundles), incomplete
 
 
 def list_insurers(conn: Connection, premium_year: int) -> list[schemas.InsurerSummary]:
