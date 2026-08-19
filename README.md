@@ -19,7 +19,9 @@ curl "http://localhost:8000/v1/premiums?postal_code=1003&birth_year=1990&franchi
 
 > Verified against priminfo.admin.ch: for an adult in Lausanne with a CHF 2,500 franchise
 > and no accident cover, this returns the same 105 offers, in the same order, **to the
-> centime**. The test suite pins that.
+> centime**. The test suite pins that, and [docs/VERIFICATION.md](docs/VERIFICATION.md)
+> gives you 13 scenarios with the official query and the API call side by side so you can
+> check it yourself.
 
 ---
 
@@ -295,7 +297,8 @@ All JSON, all versioned under `/v1`. OpenAPI schema at `/openapi.json`, Swagger 
 Premiums are **looked up, never calculated**. Every figure returned is a value the FOPH
 approved and published. The hard part is returning the *right rows*, and these are the
 rules that decide it. Each one is covered by tests in
-[`tests/test_golden_priminfo.py`](tests/test_golden_priminfo.py).
+[`tests/test_golden_priminfo.py`](tests/test_golden_priminfo.py), and reproducible by hand
+with the scenarios in [docs/VERIFICATION.md](docs/VERIFICATION.md).
 
 **Premium region, not canton.** Prices vary by premium region (`PR-REG CH0`–`CH3`), not by
 canton. A postal code is resolved to a commune (BFS number), and the commune to a region.
