@@ -53,6 +53,10 @@ curl -s http://localhost:8000/health
 
 Interactive API docs are at <http://localhost:8000/docs>.
 
+> **Windows PowerShell:** use `curl.exe`, not `curl` — the bare name is an alias for
+> `Invoke-WebRequest` and will fail with *"A drive with the name 'http' does not exist"*.
+> `(Invoke-RestMethod "<url>").results` works too. Git Bash, cmd and WSL are fine as written.
+
 ---
 
 ## Examples

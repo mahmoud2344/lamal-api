@@ -11,6 +11,17 @@ this sheet was run against both systems and matched.
 
 Assumes the API is at `http://localhost:8000` (`docker compose up -d`).
 
+> **On Windows PowerShell, use `curl.exe`, not `curl`.** Bare `curl` is an alias for
+> `Invoke-WebRequest`, which reads `-s` as `-Uri` and then fails with
+> *"A drive with the name 'http' does not exist"*. Either of these works:
+>
+> ```powershell
+> curl.exe -s "http://localhost:8000/v1/premiums?postal_code=1003&birth_year=1990&franchise=2500&accident_coverage=false"
+> (Invoke-RestMethod "http://localhost:8000/v1/premiums?postal_code=1003&birth_year=1990&franchise=2500&accident_coverage=false").results
+> ```
+>
+> Git Bash, cmd and WSL take the `curl` commands below unchanged.
+
 ---
 
 ## Read this before comparing
