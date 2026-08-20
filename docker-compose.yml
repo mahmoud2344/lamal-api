@@ -23,6 +23,9 @@ services:
     volumes:
       # Holds the SQLite database. Remove it to force a clean re-sync.
       - lamal-data:/data
+      # Extra CA certificates, for hosts behind a TLS-inspecting proxy or an
+      # antivirus that scans HTTPS. Empty by default; see certs/README.md.
+      - ./certs:/certs:ro
     environment:
       DATABASE_URL: "sqlite:////data/lamal.db"
 
@@ -53,9 +56,12 @@ services:
       # IP otherwise. 0 disables it.
       RATE_LIMIT_PER_MINUTE: "0"
 
-      # Only needed behind a TLS-inspecting corporate proxy: mount a PEM
-      # bundle and point at it, otherwise federal downloads fail to verify.
-      # CA_BUNDLE: "/data/corporate-ca.pem"
+      # Only needed when something inspects your HTTPS traffic — a corporate
+      # proxy, or antivirus with an HTTPS/web shield. Without it the sync fails
+      # with "CERTIFICATE_VERIFY_FAILED" because the federal servers appear to
+      # be signed by the interceptor's root rather than a public CA.
+      # Drop that root into ./certs/ (see certs/README.md) and uncomment:
+      # CA_BUNDLE: "/certs/local-ca.pem"
     healthcheck:
       test:
         - CMD

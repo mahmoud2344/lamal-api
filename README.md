@@ -497,6 +497,24 @@ docker compose exec api lamal-api sync
 
 ---
 
+## Behind a TLS-inspecting proxy or antivirus
+
+If `docker compose build` fails with `CERTIFICATE_VERIFY_FAILED` while fetching from PyPI, or
+the sync fails the same way against the federal servers, something is inspecting your HTTPS
+traffic and re-signing it with its own root — a corporate middlebox, or antivirus with an
+HTTPS/web shield (Norton, Kaspersky, ESET). Your OS trusts that root; the container does not.
+
+Export the interceptor's root certificate into `./certs/` — [certs/README.md](certs/README.md)
+has the one-liner for Windows, macOS and Linux — then:
+
+* **the build** picks it up automatically; and
+* **the running service** needs `CA_BUNDLE` uncommented in `docker-compose.yml`, which is
+  already wired to the mounted `./certs` directory.
+
+TLS verification stays **on** in both cases; you are supplying the root that is actually
+signing the traffic, not disabling the check. The certificate is used only in the build stage
+and is not present in the finished image. Certificates in `certs/` are git-ignored.
+
 ## Running without Docker
 
 Requires Python 3.11+.

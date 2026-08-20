@@ -31,3 +31,9 @@ htmlcov/
 .vscode/
 .DS_Store
 Thumbs.db
+
+# Local CA certificates for building behind a TLS-inspecting proxy.
+# Never commit these.
+certs/*.pem
+certs/*.crt
+certs/*.cer
