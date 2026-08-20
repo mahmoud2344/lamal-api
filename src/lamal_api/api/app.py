@@ -3,12 +3,10 @@
 from __future__ import annotations
 
 import logging
-import time
-from collections import defaultdict, deque
-from collections.abc import AsyncIterator, Awaitable, Callable
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
@@ -18,6 +16,7 @@ from ..config import Settings, get_settings
 from ..db.engine import create_db_engine, init_schema
 from ..domain.errors import LamalError
 from ..scheduler import start_background_sync, start_scheduler
+from .access import install_access_control
 from .routers import households, premiums, reference, regions
 
 log = logging.getLogger(__name__)
@@ -83,6 +82,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         finally:
             if scheduler is not None:
                 scheduler.shutdown(wait=False)
+            buffer = getattr(app.state, "usage_buffer", None)
+            if buffer is not None:
+                buffer.maybe_flush(engine, force=True)
             engine.dispose()
 
     app = FastAPI(
@@ -107,8 +109,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_headers=["*"],
     )
 
-    if settings.rate_limit_per_minute > 0:
-        _install_rate_limit(app, settings.rate_limit_per_minute)
+    install_access_control(app, settings)
 
     @app.exception_handler(LamalError)
     async def _domain_error(_: Request, exc: LamalError) -> JSONResponse:
@@ -134,38 +135,3 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(regions.router)
     app.include_router(reference.router)
     return app
-
-
-def _install_rate_limit(app: FastAPI, per_minute: int) -> None:
-    """A deliberately simple in-memory per-IP limiter.
-
-    Single-process only, and reset on restart. Anything beyond that belongs in
-    a reverse proxy, which is why this is off unless RATE_LIMIT_PER_MINUTE is
-    set.
-    """
-    hits: defaultdict[str, deque[float]] = defaultdict(deque)
-    window = 60.0
-
-    @app.middleware("http")
-    async def _limit(
-        request: Request, call_next: Callable[[Request], Awaitable[Response]]
-    ) -> Response:
-        if request.url.path in {"/health", "/docs", "/openapi.json"}:
-            return await call_next(request)
-        client = request.client.host if request.client else "unknown"
-        now = time.monotonic()
-        bucket = hits[client]
-        while bucket and now - bucket[0] > window:
-            bucket.popleft()
-        if len(bucket) >= per_minute:
-            retry_after = int(window - (now - bucket[0])) + 1
-            return JSONResponse(
-                status_code=429,
-                headers={"Retry-After": str(retry_after)},
-                content={
-                    "error": "rate_limited",
-                    "message": f"Too many requests. The limit is {per_minute} per minute.",
-                },
-            )
-        bucket.append(now)
-        return await call_next(request)

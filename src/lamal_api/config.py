@@ -46,7 +46,21 @@ class Settings(BaseSettings):
     rate_limit_per_minute: int = Field(
         default=0,
         ge=0,
-        description="Simple per-IP request cap. 0 disables rate limiting entirely.",
+        description="Request cap per client per minute, applied per API key when "
+        "authentication is on and per IP otherwise. 0 disables rate limiting.",
+    )
+
+    # --- access control ----------------------------------------------------
+    auth_enabled: bool = Field(
+        default=False,
+        description="Require an API key on every endpoint except /health. Off by default "
+        "so a fresh 'docker compose up -d' still serves. Mint keys with "
+        "'lamal-api key create'.",
+    )
+    api_key_header: str = Field(
+        default="X-API-Key",
+        description="Header carrying the API key. 'Authorization: Bearer <key>' is always "
+        "accepted as well.",
     )
 
     # --- data synchronisation ---------------------------------------------

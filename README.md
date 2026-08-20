@@ -399,6 +399,62 @@ against `Total`.
 
 ---
 
+## Protecting your instance
+
+**Off by default.** A fresh `docker compose up -d` serves openly, which is the point of the
+quickstart. Turn protection on only if you expose the instance publicly.
+
+### API keys
+
+```bash
+# 1. mint a key (shown once — store it now)
+docker compose exec api lamal-api key create --name "mobile app" --rate-limit 300
+
+# 2. enforce it
+#    set AUTH_ENABLED=true in docker-compose.yml, then:
+docker compose up -d
+
+# 3. call with the key
+curl -s -H "X-API-Key: lam_7Kq2xR9f..." "http://localhost:8000/v1/premiums?..."
+#    Authorization: Bearer <key> works too
+```
+
+```bash
+lamal-api key list             # prefixes, limits, last use, request counts
+lamal-api key revoke lam_7Kq2  # effective on the next request, no restart
+```
+
+**Be clear about what this buys you.** This API serves *public federal open data* — nothing
+behind a key is confidential, and there are no writes and no user accounts. Keys are not a
+secrecy boundary. They exist so you can protect your bandwidth, see which client is
+generating load, and rate-limit per *client* instead of per IP. That last one matters:
+IP-based limits punish everyone behind a shared NAT for one caller's traffic.
+
+Keys are stored as SHA-256 hashes and displayed once at creation, so a leaked database
+yields no working key.
+
+`key list` shows request counts and last use. `last_used_at` is written the first time a key
+is seen, so it is accurate immediately; the counts are batched and written about once a
+minute, and on shutdown. They are usage statistics rather than billing records — a hard kill
+can lose up to a minute of counts, which is the price of not doing a database write on every
+read request.
+
+**`/health` is always reachable without a key.** The container `HEALTHCHECK` calls it — if it
+required a key, the container would report unhealthy and restart forever. Everything else,
+including `/docs` and `/openapi.json`, needs one when `AUTH_ENABLED=true`.
+
+### Rate limiting
+
+`RATE_LIMIT_PER_MINUTE` applies per API key when auth is on and per client IP otherwise. A
+key created with `--rate-limit` overrides it for that client. Exceeding it returns **429**
+with a `Retry-After` header.
+
+The limiter is **in-process**: with several uvicorn workers each holds its own counters, so
+the effective limit is roughly `RATE_LIMIT_PER_MINUTE × workers`. For a single-container
+deployment that is fine. If you need a hard global limit, or you are running more than one
+replica, put the limit in a reverse proxy (Caddy, nginx, Cloudflare) instead — that is the
+right layer for it, and this setting can stay at `0`.
+
 ## Configuration
 
 Everything is environment variables; see [`.env.example`](.env.example) for the annotated
@@ -413,7 +469,9 @@ list.
 | `SYNC_ON_STARTUP` | `false` | Sync once at boot, on a worker thread. |
 | `SYNC_YEARS` | *(empty)* | `2026`, `2024,2026` or `2024-2026`. Empty = the year currently published. |
 | `CORS_ORIGINS` | `*` | Comma-separated allowed origins. |
-| `RATE_LIMIT_PER_MINUTE` | `0` | Simple per-IP cap. `0` disables it. |
+| `AUTH_ENABLED` | `false` | Require an API key everywhere except `/health`. |
+| `API_KEY_HEADER` | `X-API-Key` | Header carrying the key. `Authorization: Bearer` always works too. |
+| `RATE_LIMIT_PER_MINUTE` | `0` | Cap per key (auth on) or per IP (auth off). `0` disables it. |
 | `MAX_PAGE_SIZE` | `500` | Largest page a client may request. |
 | `HTTP_TIMEOUT_SECONDS` | `180` | Download timeout. |
 | `USER_AGENT` | `lamal-api/0.1 …` | Please set your own contact URL if you run this publicly. |

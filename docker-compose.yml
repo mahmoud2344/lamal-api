@@ -44,7 +44,13 @@ services:
       LOG_LEVEL: "INFO"
       CORS_ORIGINS: "*"
 
-      # Off by default. Set a number to cap requests per IP per minute.
+      # Require an API key on everything except /health. Off by default so this
+      # file works as-is. Mint keys with:
+      #   docker compose exec api lamal-api key create --name "..."
+      AUTH_ENABLED: "false"
+
+      # Requests per minute, per API key when AUTH_ENABLED=true and per client
+      # IP otherwise. 0 disables it.
       RATE_LIMIT_PER_MINUTE: "0"
 
       # Only needed behind a TLS-inspecting corporate proxy: mount a PEM

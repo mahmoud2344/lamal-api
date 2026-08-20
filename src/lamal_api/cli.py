@@ -78,6 +78,34 @@ def build_parser() -> argparse.ArgumentParser:
         "info",
         help="Show the resolved upstream sources and what the database currently holds.",
     )
+
+    key_cmd = sub.add_parser(
+        "key",
+        help="Manage API keys (only enforced when AUTH_ENABLED=true).",
+        description=(
+            "API keys protect an operator's bandwidth and allow per-client rate limits. "
+            "The data itself is public federal open data, so a key is not a secrecy "
+            "boundary. Keys are stored hashed and shown only once, at creation."
+        ),
+    )
+    key_sub = key_cmd.add_subparsers(dest="key_command", required=True)
+
+    key_create = key_sub.add_parser("create", help="Mint a new API key.")
+    key_create.add_argument("--name", required=True, help="Who or what this key is for.")
+    key_create.add_argument(
+        "--rate-limit",
+        type=int,
+        default=None,
+        metavar="PER_MINUTE",
+        help="Requests per minute for this key. Omit to use RATE_LIMIT_PER_MINUTE.",
+    )
+
+    key_list = key_sub.add_parser("list", help="List keys and their usage.")
+    key_list.add_argument("--all", action="store_true", help="Include revoked keys.")
+
+    key_revoke = key_sub.add_parser("revoke", help="Revoke a key by its prefix.")
+    key_revoke.add_argument("prefix", help="The displayed prefix, e.g. lam_7Kq2.")
+
     return parser
 
 
@@ -94,6 +122,67 @@ def main(argv: list[str] | None = None) -> int:
         return _cmd_serve(settings, args)
     if args.command == "info":
         return _cmd_info(settings)
+    if args.command == "key":
+        return _cmd_key(settings, args)
+    return 2
+
+
+def _cmd_key(settings: Settings, args: argparse.Namespace) -> int:
+    from . import security
+
+    engine = create_db_engine(settings)
+    init_schema(engine)
+
+    if args.key_command == "create":
+        try:
+            key, record = security.create_key(
+                engine, name=args.name, rate_limit_per_minute=args.rate_limit
+            )
+        except ValueError as exc:
+            print(f"error: {exc}")
+            return 2
+        own_limit = record.rate_limit_per_minute
+        print("key created (store it now, it is not shown again):")
+        print(f"\n  {key}\n")
+        print(f"  name:   {record.name}")
+        print(f"  prefix: {record.prefix}")
+        print(f"  limit:  {own_limit if own_limit is not None else 'global default'}")
+        if not settings.auth_enabled:
+            print(
+                "\nnote: AUTH_ENABLED is false, so this instance still answers without a "
+                "key.\n      Set AUTH_ENABLED=true and restart to enforce it."
+            )
+        return 0
+
+    if args.key_command == "list":
+        records = security.list_keys(engine, include_revoked=args.all)
+        if not records:
+            print("no API keys. Create one with 'lamal-api key create --name \"...\"'.")
+            return 0
+        print(f"{'PREFIX':<10} {'NAME':<24} {'LIMIT/min':>9}  {'LAST USED':<20} {'REQUESTS':>9}")
+        for entry in records:
+            shown_limit = (
+                "-" if entry.rate_limit_per_minute is None else str(entry.rate_limit_per_minute)
+            )
+            used = entry.last_used_at.strftime("%Y-%m-%dT%H:%MZ") if entry.last_used_at else "never"
+            name = entry.name if entry.revoked_at is None else f"{entry.name} (revoked)"
+            print(
+                f"{entry.prefix:<10} {name:<24} {shown_limit:>9}  "
+                f"{used:<20} {entry.request_count:>9,}"
+            )
+        return 0
+
+    if args.key_command == "revoke":
+        revoked = security.revoke_key(engine, args.prefix)
+        if revoked is None:
+            print(f"no key with prefix {args.prefix!r}. Run 'lamal-api key list' to see them.")
+            return 1
+        if revoked.revoked_at is not None:
+            print(f"key {revoked.prefix} ({revoked.name}) was already revoked.")
+            return 0
+        print(f"revoked {revoked.prefix} ({revoked.name}). It stops working on the next request.")
+        return 0
+
     return 2
 
 

@@ -68,6 +68,26 @@ insurer = Table(
 )
 
 
+#: API keys, stored as SHA-256 hashes — the secret itself is never persisted.
+#: Only used when the operator enables authentication; the table is created
+#: unconditionally so turning auth on never needs a migration.
+api_key = Table(
+    "api_key",
+    metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("prefix", String(16), nullable=False, unique=True),
+    Column("key_hash", String(64), nullable=False, unique=True),
+    Column("name", String(255), nullable=False),
+    # NULL means "fall back to the global RATE_LIMIT_PER_MINUTE".
+    Column("rate_limit_per_minute", Integer, nullable=True),
+    Column("created_at", DateTime(timezone=True), nullable=False),
+    Column("last_used_at", DateTime(timezone=True), nullable=True),
+    Column("request_count", BigInteger, nullable=False, server_default="0"),
+    Column("revoked_at", DateTime(timezone=True), nullable=True),
+)
+Index("ix_api_key_hash", api_key.c.key_hash)
+
+
 commune = Table(
     "commune",
     metadata,
