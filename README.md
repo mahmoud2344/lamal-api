@@ -515,6 +515,13 @@ TLS verification stays **on** in both cases; you are supplying the root that is 
 signing the traffic, not disabling the check. The certificate is used only in the build stage
 and is not present in the finished image. Certificates in `certs/` are git-ignored.
 
+## Deploying to a VPS
+
+[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) takes a bare Ubuntu server to a public HTTPS endpoint
+in about fifteen minutes: Docker, Caddy with automatic certificates, firewall, API keys, and a
+table of exactly which settings to change. Short version — nothing in the code needs editing,
+because the service has no notion of the domain it is served from.
+
 ## Running without Docker
 
 Requires Python 3.11+.
