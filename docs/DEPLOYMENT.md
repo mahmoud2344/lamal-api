@@ -4,6 +4,11 @@
 
 From a bare Ubuntu server to `https://api.example.ch/v1/premiums` in about fifteen minutes.
 
+> **On Hostinger, with no custom domain?** Follow
+> [DEPLOY-HOSTINGER.md](DEPLOY-HOSTINGER.md) instead — a start-to-finish runbook that uses the
+> free `*.hstgr.cloud` hostname for HTTPS and turns on API keys. This page is the general
+> version.
+
 Works on anything with 1 vCPU and 1 GB RAM — Hetzner CX22, DigitalOcean, Infomaniak, Exoscale.
 The database is SQLite and the dataset is ~220 000 rows, so this needs far less machine than
 people expect. Storage: about 250 MB for the image plus 100 MB for the data.
