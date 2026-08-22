@@ -579,7 +579,7 @@ covers this software only.
 
 ```bash
 pip install -e ".[dev]"
-pytest                 # 135 tests, no network required
+pytest                 # the whole suite, no network required
 ruff check src tests
 ruff format --check src tests
 mypy
