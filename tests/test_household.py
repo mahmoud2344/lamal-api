@@ -3,6 +3,9 @@
 The expected figures come from priminfo.admin.ch for premium year 2026 and must
 match to the centime — a household is where an implementation that prices each
 person independently silently overcharges families.
+
+Endpoint tests run against the published files and against the same rows in the
+2027 layout, where adults carry subgroup ``E1``/``J1`` instead of none.
 """
 
 from __future__ import annotations
@@ -13,6 +16,12 @@ import pytest
 from fastapi.testclient import TestClient
 
 from lamal_api.domain.household import child_subgroup, describes_sibling_discount
+
+
+@pytest.fixture(params=["2026", "2027"], ids=["2026-layout", "2027-layout"])
+def source_layout(request: pytest.FixtureRequest) -> str:
+    return str(request.param)
+
 
 # Zürich region 1, standard model, one adult born 1985 (franchise 300, no accident)
 # plus children on franchise 0 with accident cover. Read off priminfo.

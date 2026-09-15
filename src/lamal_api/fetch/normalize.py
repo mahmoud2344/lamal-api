@@ -3,6 +3,10 @@
 Validation is strict on purpose. If the FOPH changes a vocabulary or drops a
 column, the sync must fail loudly with a message naming the file and the value,
 rather than quietly loading a table that produces wrong premiums.
+
+Codes are translated through :mod:`.vocabulary`, which reads both the files up
+to premium year 2026 and the renamed codes used from 2027. The column names did
+not change between the two, so one set of loaders serves both.
 """
 
 from __future__ import annotations
@@ -10,14 +14,15 @@ from __future__ import annotations
 import logging
 import re
 import unicodedata
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from pathlib import Path
-from typing import Any
+from typing import Any, TypeVar
 
 from openpyxl import load_workbook
 
-from ..domain.codes import Accident, AgeClass, TariffType
-from ..domain.rules import parse_franchise_code, parse_premium_to_centimes
+from ..domain.codes import Territory
+from ..domain.rules import parse_premium_to_centimes
+from . import vocabulary
 from .readers import (
     normalize_key,
     read_csv_dicts,
@@ -70,33 +75,28 @@ CATCHMENT_COLUMNS = (
     "Gemeinden-BFS",
 )
 
-_AGE_CLASSES = {a.value for a in AgeClass}
-_ACCIDENT = {a.value for a in Accident}
-_TARIFF_TYPES = {t.value for t in TariffType}
-_REGION_RE = re.compile(r"^PR-REG (CH|EU)\d$")
-
-#: ``Tarife.csv`` and ``Prämien_EU.csv`` write tariff types without the
-#: ``TAR-`` prefix that ``Prämien_CH.csv`` uses. Normalise everything to the
-#: CH spelling so one vocabulary flows through the whole service.
-_TARIFF_TYPE_ALIASES = {
-    "BASE": TariffType.BASE.value,
-    "HAM": TariffType.FAMILY_DOCTOR.value,
-    "HMO": TariffType.HMO.value,
-    "DIV": TariffType.OTHER.value,
-}
+_T = TypeVar("_T")
 
 
 class SourceFormatError(ValueError):
     """An official file did not look the way the loader expects."""
 
 
-def _tariff_type(raw: str, *, source: str, line: int | None = None) -> str:
-    value = raw.strip()
-    value = _TARIFF_TYPE_ALIASES.get(value, value)
-    if value not in _TARIFF_TYPES:
-        where = f"{source}:{line}" if line else source
-        raise SourceFormatError(f"{where}: unknown Tariftyp {raw!r}")
-    return value
+class EmptySourceFileError(SourceFormatError):
+    """An official file has its header but no data rows.
+
+    The FOPH does this on purpose every September: the loose files are replaced
+    by empty ones in the next year's layout before the new premiums are
+    released.
+    """
+
+
+def _code(translate: Callable[[str], _T], raw: str, where: str) -> _T:
+    """Run a :mod:`.vocabulary` translation, naming the file and line on failure."""
+    try:
+        return translate(raw)
+    except vocabulary.UnknownCodeError as exc:
+        raise SourceFormatError(f"{where}: {exc}") from None
 
 
 def _int(raw: Any, field: str, source: str) -> int:
@@ -117,40 +117,34 @@ def premium_rows(path: Path, *, territory: str = "CH") -> Iterator[dict[str, Any
     dataset zero-pad it (``0008``). Storing an int is what lets the three files
     join at all.
     """
-    is_eu = territory == "EU"
+    table = Territory(territory)
+    is_eu = table is Territory.EU_EFTA
     expected = PREMIUM_EU_COLUMNS if is_eu else PREMIUM_CH_COLUMNS
-    location_key = "Land" if is_eu else "Kanton"
     checked_header = False
     source = path.name
+
+    def in_table(raw: str) -> str:
+        return vocabulary.region(raw, table)
 
     for line, row in enumerate(read_csv_dicts(path), start=2):
         if not checked_header:
             require_columns(list(row), expected, source)
             checked_header = True
-
-        age_class = row["Altersklasse"].strip()
-        if age_class not in _AGE_CLASSES:
-            raise SourceFormatError(f"{source}:{line}: unknown Altersklasse {age_class!r}")
-        accident = row["Unfalleinschluss"].strip()
-        if accident not in _ACCIDENT:
-            raise SourceFormatError(f"{source}:{line}: unknown Unfalleinschluss {accident!r}")
-        region = row["Region"].strip()
-        if not _REGION_RE.match(region):
-            raise SourceFormatError(f"{source}:{line}: unexpected Region {region!r}")
+        where = f"{source}:{line}"
 
         record: dict[str, Any] = {
             "premium_year": _int(row["Geschäftsjahr"], "Geschäftsjahr", source),
             "survey_year": _int(row["Erhebungsjahr"], "Erhebungsjahr", source),
             "insurer_bag_number": _int(row["Versicherer"], "Versicherer", source),
-            "region": region,
-            "age_class": age_class,
-            "age_subgroup": row["Altersuntergruppe"].strip(),
-            "accident": accident,
+            "region": _code(in_table, row["Region"], where),
+            "age_class": _code(vocabulary.age_class, row["Altersklasse"], where),
+            "age_subgroup": _code(vocabulary.age_subgroup, row["Altersuntergruppe"], where),
+            "accident": _code(vocabulary.accident, row["Unfalleinschluss"], where),
             "tariff_code": row["Tarif"].strip(),
-            "tariff_type": _tariff_type(row["Tariftyp"], source=source, line=line),
+            "tariff_type": _code(vocabulary.tariff_type, row["Tariftyp"], where),
             "tariff_label": row["Tarifbezeichnung"].strip(),
-            "franchise_chf": parse_franchise_code(row["Franchise"].strip()),
-            "franchise_level": row["Franchisestufe"].strip(),
+            "franchise_chf": _code(vocabulary.franchise_amount, row["Franchise"], where),
+            "franchise_level": _code(vocabulary.franchise_level, row["Franchisestufe"], where),
             "premium_centimes": parse_premium_to_centimes(row["Prämie"]),
             # isBaseF marks the ordinary franchise (FRAST1). isBaseP is NOT
             # used: it is only set on the MIT-UNF half of the TAR-BASE rows, so
@@ -159,9 +153,9 @@ def premium_rows(path: Path, *, territory: str = "CH") -> Iterator[dict[str, Any
             "is_standard_franchise": row["isBaseF"].strip() == "1",
         }
         if is_eu:
-            record["country"] = row[location_key].strip()
+            record["country"] = _code(vocabulary.country, row["Land"], where)
         else:
-            record["canton"] = row[location_key].strip()
+            record["canton"] = row["Kanton"].strip()
         yield record
 
 
@@ -171,6 +165,9 @@ def tariff_rows(path: Path) -> Iterator[dict[str, Any]]:
     The file mixes two categories under ``Kategorie``: ``MOD`` rows are
     insurance models (what we want) and ``ALT`` rows are age-category labels
     (``E1`` = adults, ``K3`` = "from the 3rd child"), which are not tariffs.
+
+    From 2027 the file adds ``Name_EN`` (not stored yet) and drops ``Sort.-Nr.``,
+    so ``sort_order`` is empty for those years.
     """
     checked_header = False
     source = path.name
@@ -185,7 +182,7 @@ def tariff_rows(path: Path) -> Iterator[dict[str, Any]]:
             "premium_year": _int(row["Geschäftsjahr"], "Geschäftsjahr", source),
             "insurer_bag_number": _int(row["Versicherer"], "Versicherer", source),
             "tariff_code": row["Tarif"].strip(),
-            "tariff_type": _tariff_type(row["Tariftyp"], source=source, line=line),
+            "tariff_type": _code(vocabulary.tariff_type, row["Tariftyp"], f"{source}:{line}"),
             "name_de": row["Name_DE"].strip() or None,
             "name_fr": row["Name_FR"].strip() or None,
             "name_it": row["Name_IT"].strip() or None,
@@ -200,11 +197,20 @@ def restriction_rows(path: Path) -> Iterator[dict[str, Any]]:
     carry ``Eingeschränkt = N``. A handful are limited to an explicit list of
     communes; the comma-separated BFS list is exploded into one row each so it
     can be joined rather than parsed at query time.
+
+    The region goes through the same translation as the premium file's. The
+    query layer matches a restriction to a premium by region, so a code left
+    untranslated here would not error: the restriction would simply never
+    match, and the model would be offered in every commune.
     """
     checked_header = False
     source = path.name
     rows = read_tabular_dicts(path, header_markers=("Versicherer", "Tarif", "Eingeschränkt"))
-    for row in rows:
+
+    def swiss_region(raw: str) -> str:
+        return vocabulary.region(raw, Territory.SWITZERLAND)
+
+    for line, row in enumerate(rows, start=2):
         if not checked_header:
             require_columns(list(row), CATCHMENT_COLUMNS, source)
             checked_header = True
@@ -224,7 +230,7 @@ def restriction_rows(path: Path) -> Iterator[dict[str, Any]]:
             "premium_year": _int(row["Geschäftsjahr"], "Geschäftsjahr", source),
             "insurer_bag_number": _int(row["Versicherer"], "Versicherer", source),
             "canton": row["Kanton"].strip(),
-            "region": row["Region"].strip(),
+            "region": _code(swiss_region, row["Region"], f"{source}:{line}"),
             "tariff_code": row["Tarif"].strip(),
         }
         for part in raw_list.split(","):
@@ -420,6 +426,7 @@ def _optional_int(value: Any) -> int | None:
 
 
 __all__ = [
+    "EmptySourceFileError",
     "SourceFormatError",
     "commune_and_postal_rows",
     "insurer_rows",

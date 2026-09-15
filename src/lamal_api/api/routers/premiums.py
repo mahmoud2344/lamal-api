@@ -6,6 +6,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Query
 from sqlalchemy import func, select
+from sqlalchemy.engine import Connection
 
 from ...db import models
 from ...domain.codes import TariffType
@@ -22,16 +23,15 @@ from ..deps import ConnectionDep, SettingsDep
 
 router = APIRouter(prefix="/v1", tags=["premiums"])
 
-_TARIFF_TYPE_INPUT = {
-    "base": TariffType.BASE.value,
-    "tar-base": TariffType.BASE.value,
-    "ham": TariffType.FAMILY_DOCTOR.value,
-    "tar-ham": TariffType.FAMILY_DOCTOR.value,
-    "hmo": TariffType.HMO.value,
-    "tar-hmo": TariffType.HMO.value,
-    "div": TariffType.OTHER.value,
-    "tar-div": TariffType.OTHER.value,
-}
+#: Every tariff type by its bare name, in declaration order: BASE, the types used
+#: up to premium year 2026, then the types used from 2027.
+_TARIFF_TYPE_NAMES = {t.value: t.value.removeprefix("TAR-") for t in TariffType}
+_TARIFF_TYPE_INPUT = {name.casefold(): value for value, name in _TARIFF_TYPE_NAMES.items()}
+
+TARIFF_TYPE_HELP = (
+    "Filter by model. Up to premium year 2026: BASE, HAM, HMO, DIV. From 2027: BASE, "
+    "PRAXIS, FLEX, TEL_DIG, PHARM. Repeatable; case-insensitive; TAR- prefix optional."
+)
 
 
 class InvalidParameterError(LamalError):
@@ -44,17 +44,39 @@ def _normalise_tariff_types(values: list[str] | None) -> tuple[str, ...] | None:
         return None
     out: list[str] = []
     for raw in values:
-        key = raw.strip().casefold()
+        key = raw.strip().casefold().replace("_", "-").removeprefix("tar-").replace("-", "_")
         if key not in _TARIFF_TYPE_INPUT:
             raise InvalidParameterError(
-                f"Unknown tariff_type {raw!r}. Valid values: BASE (standard), HAM "
-                f"(family doctor), HMO, DIV (Telmed and other models). The TAR- prefixed "
-                f"forms are accepted too.",
+                f"Unknown tariff_type {raw!r}. Up to premium year 2026: BASE (standard), "
+                f"HAM (family doctor), HMO, DIV (Telmed and other models). From 2027: BASE, "
+                f"PRAXIS, FLEX, TEL_DIG, PHARM. The TAR- prefixed forms are accepted too.",
                 tariff_type=raw,
-                valid=["BASE", "HAM", "HMO", "DIV"],
+                valid=list(_TARIFF_TYPE_NAMES.values()),
             )
         out.append(_TARIFF_TYPE_INPUT[key])
     return tuple(dict.fromkeys(out))
+
+
+def tariff_type_note(
+    conn: Connection, premium_year: int, requested: tuple[str, ...] | None
+) -> str | None:
+    """Explain a tariff-type filter that cannot match anything in this year.
+
+    Without this, asking 2027 for ``HAM`` would return an empty list that looks
+    exactly like "no insurer offers that here".
+    """
+    if not requested:
+        return None
+    used = queries.tariff_types_in_year(conn, premium_year)
+    unused = [t for t in requested if t not in used]
+    if not unused or not used:
+        return None
+    in_year = [name for value, name in _TARIFF_TYPE_NAMES.items() if value in used]
+    return (
+        f"Premium year {premium_year} has no {'/'.join(_TARIFF_TYPE_NAMES[t] for t in unused)} "
+        f"models; that year classifies them as {', '.join(in_year)}. The FOPH changed the "
+        f"classification for premium year 2027."
+    )
 
 
 @router.get(
@@ -117,7 +139,7 @@ def get_premiums(
     ] = None,
     tariff_type: Annotated[
         list[str] | None,
-        Query(description="Filter by model: BASE, HAM, HMO, DIV. Repeatable."),
+        Query(description=TARIFF_TYPE_HELP),
     ] = None,
     insurer: Annotated[
         list[int] | None, Query(description="Filter by FOPH/BAG insurer number. Repeatable.")
@@ -188,6 +210,8 @@ def get_premiums(
             f"restricted to particular communes were kept if available in any of them; "
             f"pass bfs_number for an exact answer."
         )
+    if unused_types := tariff_type_note(conn, premium_year, criteria.tariff_types):
+        notes.append(unused_types)
     if total == 0:
         notes.append(
             "No premiums matched. Not every insurer operates in every canton and region, "

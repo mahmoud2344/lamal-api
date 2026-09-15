@@ -323,7 +323,7 @@ All JSON, all versioned under `/v1`. OpenAPI schema at `/openapi.json`, Swagger 
 | `bfs_number` | one of | Official BFS/OFS commune number. Authoritative; use it to resolve an ambiguous postal code. |
 | `franchise` | no | Franchise in CHF. Defaults to the standard franchise for the age class (0 for children, 300 otherwise). |
 | `year` | no | Premium year. Defaults to the most recent one loaded. |
-| `tariff_type` | no | `BASE`, `HAM`, `HMO`, `DIV`. Repeatable. `TAR-` prefixed spellings also accepted. |
+| `tariff_type` | no | Up to premium year 2026: `BASE`, `HAM`, `HMO`, `DIV`. From 2027: `BASE`, `PRAXIS`, `FLEX`, `TEL_DIG`, `PHARM`. Repeatable, case-insensitive, `TAR-` prefix optional. |
 | `insurer` | no | FOPH/BAG insurer number. Repeatable. |
 | `age_subgroup` | no | Override the age subgroup. Children default to `K1`. |
 | `limit`, `offset` | no | Pagination. Default `limit=50`, capped by `MAX_PAGE_SIZE`. |
@@ -383,6 +383,13 @@ Flexmed R1* at CHF 420.20 in Lausanne. Both are returned; they are different pro
 is set to `1` only on the *with-accident* half of the standard-model rows. Filtering on it
 silently drops every without-accident standard premium. The tariff type carries that fact
 instead.
+
+**Tariff types follow each year's own classification.** For premium year 2027 the FOPH
+replaced `HAM`, `HMO` and `DIV` with `PRAXIS`, `FLEX`, `TEL_DIG` and `PHARM`. The two sets do
+not correspond one-to-one and the FOPH published no mapping between them, so lamal-api does
+not invent one: a 2026 premium stays `TAR-HAM`, a 2027 premium is `TAR-PRAXIS` or similar.
+Only `TAR-BASE`, the standard model, exists in both. Filter by a type the year does not use
+and the response's `notes` say which types that year has.
 
 **Empty results are normal.** Not every insurer operates in every canton and region.
 
@@ -483,6 +490,16 @@ list.
 New premium years are published in **late September** for the following year. The fetcher
 reads the premium year out of the downloaded file, so a new year is picked up with no code
 or config change.
+
+A few weeks before that release, the FOPH moves the current year into its yearly archive and
+leaves the live files **empty** (header only). A sync during that gap loads the newest
+archived year instead and says so in its output, so a new installation still starts with
+data and an existing one keeps what it has.
+
+From premium year 2027 the FOPH files **spell every code differently** (`PR_REG_1` instead
+of `PR-REG CH1`, `AKA_03_ERW` instead of `AKL-ERW`, and so on). The loaders read both
+spellings and store one, so API responses keep the same codes across years; the one real
+change is the tariff types, [described above](#correctness-the-rules-that-matter).
 
 The sync is **idempotent**: every ingested file is recorded with its SHA-256, and a run
 against unchanged upstream files touches nothing (about 3 seconds). Each year is replaced

@@ -20,6 +20,7 @@ from lamal_api.fetch.readers import (
     read_csv_dicts,
     require_columns,
 )
+from lamal_api.fetch.sync import resolve_years
 
 FIXTURES = Path(__file__).parent / "fixtures"
 PREMIUMS = FIXTURES / "praemien_ch_sample.csv"
@@ -149,6 +150,24 @@ class TestRestrictionNormalisation:
     def test_insurer_is_unpadded(self) -> None:
         rows = list(restriction_rows(CATCHMENT))
         assert {r["insurer_bag_number"] for r in rows} == {1555}
+
+
+class TestYearResolution:
+    def test_live_year_by_default(self) -> None:
+        assert resolve_years(None, 2027, [2024, 2025, 2026]) == [2027]
+
+    def test_newest_archive_while_the_live_files_are_empty(self) -> None:
+        """Each September the FOPH archives the current year and publishes empty
+        files ahead of the next one. A fresh install must still get data."""
+        assert resolve_years(None, None, [2024, 2026, 2025]) == [2026]
+
+    def test_requested_years_always_win(self) -> None:
+        assert resolve_years([2025, 2026], None, [2025, 2026]) == [2025, 2026]
+        assert resolve_years([2025], 2027, [2025, 2026]) == [2025]
+
+    def test_nothing_to_load_fails_loudly(self) -> None:
+        with pytest.raises(SourceFormatError, match="no yearly archive"):
+            resolve_years(None, None, [])
 
 
 class TestCkanDiscovery:

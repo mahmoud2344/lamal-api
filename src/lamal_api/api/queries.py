@@ -690,6 +690,19 @@ def franchise_levels(conn: Connection, premium_year: int, age_class: AgeClass) -
     return {amount: observed.get(amount, "") for amount in valid_franchises(age_class)}
 
 
+def tariff_types_in_year(conn: Connection, premium_year: int) -> set[str]:
+    """The tariff types that occur in one premium year's data.
+
+    Not a fixed list: the FOPH reclassified insurance models for 2027, so the
+    types used depend on the year.
+    """
+    p = models.premium.c
+    rows = conn.execute(
+        select(distinct(p.tariff_type)).where(p.premium_year == premium_year)
+    ).scalars()
+    return set(rows)
+
+
 def premium_row_count(conn: Connection) -> int:
     return int(conn.execute(select(func.count()).select_from(models.premium)).scalar() or 0)
 

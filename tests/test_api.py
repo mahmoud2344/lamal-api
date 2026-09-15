@@ -135,7 +135,34 @@ class TestPremiumFiltering:
     def test_unknown_tariff_type_is_rejected_helpfully(self, client: TestClient) -> None:
         response = client.get("/v1/premiums", params={**self.BASE, "tariff_type": "TELMED"})
         assert response.status_code == 422
-        assert response.json()["details"]["valid"] == ["BASE", "HAM", "HMO", "DIV"]
+        assert response.json()["details"]["valid"] == [
+            "BASE",
+            "HAM",
+            "HMO",
+            "DIV",
+            "PRAXIS",
+            "FLEX",
+            "TEL_DIG",
+            "PHARM",
+        ]
+
+    @pytest.mark.parametrize("spelling", ["TEL_DIG", "tel-dig", "TAR-TEL_DIG", "tar_tel_dig"])
+    def test_2027_tariff_types_are_accepted_in_any_spelling(
+        self, client: TestClient, spelling: str
+    ) -> None:
+        body = client.get("/v1/premiums", params={**self.BASE, "tariff_type": spelling}).json()
+        assert body["query"]["tariff_types"] == ["TAR-TEL_DIG"]
+
+    def test_a_type_the_year_does_not_use_is_explained(self, client: TestClient) -> None:
+        """The fixture year is 2026, which predates PRAXIS. An empty result on its
+        own would read as "no insurer offers that model here"."""
+        body = client.get("/v1/premiums", params={**self.BASE, "tariff_type": "PRAXIS"}).json()
+        assert body["results"] == []
+        assert any("2026 has no PRAXIS" in note and "HAM" in note for note in body["notes"])
+
+    def test_no_classification_note_when_the_type_exists(self, client: TestClient) -> None:
+        body = client.get("/v1/premiums", params={**self.BASE, "tariff_type": "HAM"}).json()
+        assert not any("classifies" in note for note in body["notes"])
 
     def test_sort_descending(self, client: TestClient) -> None:
         body = client.get("/v1/premiums", params={**self.BASE, "sort": "premium_desc"}).json()

@@ -262,7 +262,9 @@ def _cmd_info(settings: Settings) -> int:
     print("\nupstream resources advertised by opendata.swiss:")
     try:
         with make_client(
-            user_agent=settings.user_agent, timeout=settings.http_timeout_seconds
+            user_agent=settings.user_agent,
+            timeout=settings.http_timeout_seconds,
+            ca_bundle=settings.ca_bundle,
         ) as client:
             catalog = ckan.fetch_catalog(client)
         print(ckan.summarise(catalog.resources))

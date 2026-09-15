@@ -41,6 +41,7 @@ Export your trust store to a PEM file and set `CA_BUNDLE=/path/to/ca.pem`.
 src/lamal_api/
   domain/     Pure LAMal rules — age classes, franchises, vocabularies. No I/O.
   fetch/      Source discovery (CKAN, priminfo), readers, normalisation, sync.
+              vocabulary.py translates both generations of FOPH codes into one.
   db/         SQLAlchemy Core schema and engine.
   api/        FastAPI app, routers, query layer, response schemas.
 tests/
@@ -100,10 +101,19 @@ loaders **validate strictly and fail loudly** — an unknown `Tariftyp` or a mis
 aborts the sync with a message naming the file and the value. That is deliberate: loading a
 subtly wrong table is worse than not loading one.
 
+Two changes are known and already handled. Every September the live files are published
+empty for a few weeks before the new year lands; the sync falls back to the newest archive.
+And from premium year 2027 every code is spelled differently; `fetch/vocabulary.py` maps
+both spellings to the one the database stores. The golden tests run against the real 2026
+fixtures and against the same rows rewritten in the 2027 layout (`write_2027_layout` in
+`tests/conftest.py`), so both paths stay covered.
+
 If a sync starts failing after a federal release:
 
 1. `lamal-api info` shows what the CKAN catalogue currently advertises.
-2. Compare against the column lists in `src/lamal_api/fetch/normalize.py`.
+2. Compare against the column lists in `src/lamal_api/fetch/normalize.py` and the code
+   mappings in `src/lamal_api/fetch/vocabulary.py`. The FOPH documents every code in
+   *Erläuterungen zu den Prämiendaten.xlsx*, published with the data.
 3. Update the loader, add a fixture covering the new shape, and open a PR.
 
 Please **do not commit data files**. `.gitignore` blocks them; the only exception is the

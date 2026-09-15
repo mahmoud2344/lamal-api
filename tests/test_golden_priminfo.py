@@ -6,13 +6,24 @@ centime. If one of these fails, the service is returning a premium that the
 Confederation's own calculator does not.
 
 The fixtures hold the real published rows, so these run offline.
+
+Every test runs twice: once against the files as published, and once against
+the same rows rewritten in the layout the FOPH uses from premium year 2027, whose
+codes are all spelled differently. Both must give priminfo's answer.
 """
 
 from __future__ import annotations
 
 from typing import ClassVar
 
+import pytest
 from fastapi.testclient import TestClient
+
+
+@pytest.fixture(params=["2026", "2027"], ids=["2026-layout", "2027-layout"])
+def source_layout(request: pytest.FixtureRequest) -> str:
+    return str(request.param)
+
 
 # priminfo: "Gemeinde Lausanne, Region 1, Kanton Waadt", born 1990,
 # franchise 2'500, Unfalldeckung Nein.

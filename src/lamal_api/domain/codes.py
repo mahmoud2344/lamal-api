@@ -3,6 +3,11 @@
 Every code in this module was read off the real ``Prämien_CH.csv`` and
 cross-checked against the official data dictionary
 (*Erläuterungen zu den Prämiendaten.xlsx*). Nothing here is guessed.
+
+These are the spellings used up to premium year 2026. From 2027 the FOPH files
+spell every code differently; :mod:`lamal_api.fetch.vocabulary` translates them
+into the values below at load time, so the rest of the service only ever sees
+one vocabulary.
 """
 
 from __future__ import annotations
@@ -24,10 +29,19 @@ class AgeClass(StrEnum):
 
 
 class TariffType(StrEnum):
-    """``Tariftyp`` — the insurance model family."""
+    """``Tariftyp`` — the insurance model family.
+
+    The FOPH reclassified the alternative models for premium year 2027: four
+    types became five, and the two sets do not correspond one-to-one. Each
+    premium year keeps the classification it was published with, so which
+    members occur depends on the year. :attr:`BASE` is the only one common to
+    both.
+    """
 
     BASE = "TAR-BASE"
-    """Standard model with free choice of doctor."""
+    """Standard model with free choice of doctor. Every premium year."""
+
+    # Up to premium year 2026.
 
     FAMILY_DOCTOR = "TAR-HAM"
     """*Hausarztmodell* / *médecin de famille*."""
@@ -37,6 +51,21 @@ class TariffType(StrEnum):
 
     OTHER = "TAR-DIV"
     """Telmed and other alternative models."""
+
+    # From premium year 2027. The FOPH explains the classes on its page about
+    # insurance models with a restricted choice of provider.
+
+    PRACTICE = "TAR-PRAXIS"
+    """FOPH class ``PRAXIS``."""
+
+    FLEX = "TAR-FLEX"
+    """FOPH class ``FLEX``."""
+
+    TELEMEDICINE_DIGITAL = "TAR-TEL_DIG"
+    """FOPH class ``TEL_DIG``."""
+
+    PHARMACY = "TAR-PHARM"
+    """FOPH class ``PHARM``."""
 
 
 class Accident(StrEnum):

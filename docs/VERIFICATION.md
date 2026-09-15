@@ -9,6 +9,11 @@ so you can run both and compare without re-deriving anything.
 All figures below are **premium year 2026**, captured **19 August 2026**. Every scenario in
 this sheet was run against both systems and matched.
 
+> **Once premium year 2027 is loaded**, the API defaults to it while these figures stay 2026.
+> Add `&year=2026` to each API call (and pick 2026 on priminfo, if it still offers it) to
+> reproduce them. The FOPH also reclassified tariff types for 2027, so a `tariff_type` of
+> `HAM`, `HMO` or `DIV` only matches 2026 data; `BASE` works in both years.
+
 Assumes the API is at `http://localhost:8000` (`docker compose up -d`).
 
 > **On Windows PowerShell, use `curl.exe`, not `curl`.** Bare `curl` is an alias for

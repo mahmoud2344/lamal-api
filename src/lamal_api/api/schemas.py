@@ -58,7 +58,11 @@ class InsurerRef(BaseModel):
 
 class TariffRef(BaseModel):
     code: str = Field(description="Insurer-specific tariff identifier (`Tarif`).")
-    type: str = Field(description="TAR-BASE, TAR-HAM, TAR-HMO or TAR-DIV.")
+    type: str = Field(
+        description="Model type as classified for that premium year. Up to 2026: TAR-BASE, "
+        "TAR-HAM, TAR-HMO, TAR-DIV. From 2027: TAR-BASE, TAR-PRAXIS, TAR-FLEX, "
+        "TAR-TEL_DIG, TAR-PHARM."
+    )
     label: str = Field(description="German tariff name as printed in the premium file.")
     name_de: str | None = None
     name_fr: str | None = None

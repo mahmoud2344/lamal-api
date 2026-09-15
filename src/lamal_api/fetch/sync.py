@@ -15,6 +15,11 @@ premium data carries no validity columns to honour.
 **Self-updating.** The premium year is read out of the downloaded file rather
 than configured, so the late-September release of a new year is picked up
 without a code or config change.
+
+**Survives the September gap.** Before releasing a new premium year, the FOPH
+moves the current year into its yearly archive and replaces the loose files
+with header-only ones. A sync during those weeks loads the newest archived year
+instead, so a fresh installation still starts with data.
 """
 
 from __future__ import annotations
@@ -37,6 +42,7 @@ from ..db.engine import optimize
 from . import ckan, priminfo
 from .download import Download, download, make_client
 from .normalize import (
+    EmptySourceFileError,
     SourceFormatError,
     commune_and_postal_rows,
     insurer_rows,
@@ -83,7 +89,8 @@ class SyncReport:
         return [y.year for y in self.years if y.status == "loaded"]
 
     def summary(self) -> str:
-        parts = [f"live premium year: {self.live_year}"]
+        live = self.live_year if self.live_year is not None else "none (published without data)"
+        parts = [f"live premium year: {live}"]
         for result in self.years:
             if result.status == "loaded":
                 parts.append(
@@ -137,12 +144,23 @@ def _run(
     catalog = ckan.fetch_catalog(client)
 
     live_premiums = download(client, catalog.premiums_ch.url, workdir / "Praemien_CH.csv")
-    live_year = peek_premium_year(live_premiums.path)
+    live_year: int | None
+    try:
+        live_year = peek_premium_year(live_premiums.path)
+    except EmptySourceFileError:
+        live_year = None
+        message = (
+            f"{catalog.premiums_ch.file_name} is published without data, as it is for a few "
+            f"weeks before each new premium year; loading from the yearly archives instead"
+        )
+        log.warning(message)
+        report.warnings.append(message)
+    else:
+        log.info("live premium file carries premium year %d", live_year)
     report.live_year = live_year
-    log.info("live premium file carries premium year %d", live_year)
 
     requested = sorted(set(years)) if years is not None else settings.requested_years()
-    targets = requested or [live_year]
+    targets = resolve_years(requested, live_year, catalog.archive_years())
 
     for year in targets:
         try:
@@ -170,6 +188,26 @@ def _run(
 # --------------------------------------------------------------------------
 
 
+def resolve_years(
+    requested: list[int] | None, live_year: int | None, archive_years: list[int]
+) -> list[int]:
+    """Decide which premium years a sync loads.
+
+    Years the operator asked for always win. Otherwise the sync loads the year
+    the live files carry or, while those are published without data, the newest
+    archived year — the one that was just moved out of the live files.
+    """
+    if requested:
+        return requested
+    if live_year is not None:
+        return [live_year]
+    if archive_years:
+        return [max(archive_years)]
+    raise SourceFormatError(
+        "the live premium file has no data rows and no yearly archive is published"
+    )
+
+
 def peek_premium_year(path: Path) -> int:
     """Read the business year from the first data row of a premium CSV."""
     for row in read_csv_dicts(path):
@@ -177,7 +215,7 @@ def peek_premium_year(path: Path) -> int:
         if raw.isdigit():
             return int(raw)
         raise SourceFormatError(f"{path.name}: first row has Geschäftsjahr={raw!r}")
-    raise SourceFormatError(f"{path.name} contains no data rows")
+    raise EmptySourceFileError(f"{path.name} contains no data rows")
 
 
 def _load_live_year(

@@ -16,7 +16,12 @@ from ...domain.rules import (
 )
 from .. import queries, schemas
 from ..deps import ConnectionDep, SettingsDep
-from .premiums import InvalidParameterError, _normalise_tariff_types
+from .premiums import (
+    TARIFF_TYPE_HELP,
+    InvalidParameterError,
+    _normalise_tariff_types,
+    tariff_type_note,
+)
 
 router = APIRouter(prefix="/v1", tags=["premiums"])
 
@@ -98,7 +103,7 @@ def get_households(
     postal_code: Annotated[int | None, Query(ge=1000, le=9999, examples=[8001])] = None,
     bfs_number: Annotated[int | None, Query(ge=1)] = None,
     year: Annotated[int | None, Query()] = None,
-    tariff_type: Annotated[list[str] | None, Query()] = None,
+    tariff_type: Annotated[list[str] | None, Query(description=TARIFF_TYPE_HELP)] = None,
     insurer: Annotated[list[int] | None, Query()] = None,
     limit: Annotated[int, Query(ge=1)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
@@ -205,6 +210,8 @@ def get_households(
             f"Postal code {postal_code} covers {len(location.bfs_numbers)} communes sharing "
             f"premium region {location.region}; pass bfs_number for an exact answer."
         )
+    if unused_types := tariff_type_note(conn, premium_year, criteria.tariff_types):
+        notes.append(unused_types)
     if total == 0:
         notes.append(
             "No insurer covers this household as specified. Not every insurer operates in "
