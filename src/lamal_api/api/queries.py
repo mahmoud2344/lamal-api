@@ -8,6 +8,7 @@ then *filters* the approved premiums the FOPH published.
 from __future__ import annotations
 
 import logging
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any
 
@@ -36,16 +37,24 @@ log = logging.getLogger(__name__)
 
 
 def available_premium_years(conn: Connection) -> list[int]:
-    rows = conn.execute(
-        select(distinct(models.premium.c.premium_year)).order_by(models.premium.c.premium_year)
-    ).scalars()
+    rows: Sequence[int] = (
+        conn.execute(
+            select(distinct(models.premium.c.premium_year)).order_by(models.premium.c.premium_year)
+        )
+        .scalars()
+        .all()
+    )
     return list(rows)
 
 
 def available_region_years(conn: Connection) -> list[int]:
-    rows = conn.execute(
-        select(distinct(models.commune.c.premium_year)).order_by(models.commune.c.premium_year)
-    ).scalars()
+    rows: Sequence[int] = (
+        conn.execute(
+            select(distinct(models.commune.c.premium_year)).order_by(models.commune.c.premium_year)
+        )
+        .scalars()
+        .all()
+    )
     return list(rows)
 
 
@@ -697,9 +706,11 @@ def tariff_types_in_year(conn: Connection, premium_year: int) -> set[str]:
     types used depend on the year.
     """
     p = models.premium.c
-    rows = conn.execute(
-        select(distinct(p.tariff_type)).where(p.premium_year == premium_year)
-    ).scalars()
+    rows: Sequence[str] = (
+        conn.execute(select(distinct(p.tariff_type)).where(p.premium_year == premium_year))
+        .scalars()
+        .all()
+    )
     return set(rows)
 
 

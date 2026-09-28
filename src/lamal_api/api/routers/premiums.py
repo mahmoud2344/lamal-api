@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Annotated
 
 from fastapi import APIRouter, Query
@@ -296,9 +297,16 @@ def get_eu_premiums(
         or 0
     )
     if total == 0:
-        available = conn.execute(
-            select(e.country).where(e.premium_year == premium_year).distinct().order_by(e.country)
-        ).scalars()
+        available: Sequence[str] = (
+            conn.execute(
+                select(e.country)
+                .where(e.premium_year == premium_year)
+                .distinct()
+                .order_by(e.country)
+            )
+            .scalars()
+            .all()
+        )
         countries = [c.removeprefix("EU ") for c in available]
         if normalised not in countries:
             raise InvalidParameterError(
