@@ -4,11 +4,16 @@ The test database is built from small CSV fixtures carved out of the real
 federal files, so the values under test are the ones the FOPH actually
 published. Nothing here touches the network.
 
-The FOPH renamed every code in its files from premium year 2027. No real 2027
-data existed when that support was written, so :func:`write_2027_layout`
-rewrites the real 2026 fixtures into the 2027 layout. A test module can load its
-database from that version by overriding ``source_layout``, which checks that
-both layouts produce the same answers.
+The FOPH renamed every code in its files from premium year 2027. Two kinds of
+fixture cover that:
+
+* ``*_2027_sample.csv`` are genuine rows from the 2027 files, published on
+  2026-09-29, checked against priminfo in ``test_golden_priminfo_2027.py``.
+* :func:`write_2027_layout` rewrites the 2026 fixtures in the 2027 layout. It
+  predates the real data and is kept because it tests something the real data
+  cannot: that the *same* rows give the *same* answers in either layout.
+
+A test module picks its database by overriding the ``source_layout`` fixture.
 """
 
 from __future__ import annotations
@@ -137,12 +142,25 @@ class SourceFiles:
     premiums: Path
     tariffs: Path
     catchment: Path
+    premium_year: int = PREMIUM_YEAR
 
 
 FILES_2026 = SourceFiles(
     premiums=FIXTURES / "praemien_ch_sample.csv",
     tariffs=FIXTURES / "tarife_sample.csv",
     catchment=FIXTURES / "einzugsgebiete_sample.csv",
+)
+
+# Every published row for the scenarios in priminfo_2027.json: Lausanne adults
+# (franchise 2500), Zürich children (every subgroup, so the sibling tiers are
+# there to leak), young adults and standard-model adults, and Bern region 2
+# adults, where two models are restricted to named communes. The communes above
+# are in the same premium regions in 2027, so they serve both years.
+FILES_2027 = SourceFiles(
+    premiums=FIXTURES / "praemien_ch_2027_sample.csv",
+    tariffs=FIXTURES / "tarife_2027_sample.csv",
+    catchment=FIXTURES / "einzugsgebiete_2027_sample.csv",
+    premium_year=2027,
 )
 
 # Header rows of the header-only 2027 files the FOPH published on 2026-09-11.
@@ -256,6 +274,7 @@ def write_2027_layout(dest: Path) -> SourceFiles:
 
 def _seed(engine: Engine, files: SourceFiles) -> None:
     now = datetime.now(UTC)
+    year = files.premium_year
     with engine.begin() as conn:
         conn.execute(insert(models.premium), list(premium_rows(files.premiums)))
         conn.execute(insert(models.tariff), list(tariff_rows(files.tariffs)))
@@ -264,13 +283,13 @@ def _seed(engine: Engine, files: SourceFiles) -> None:
             conn.execute(insert(models.tariff_restriction), restrictions)
         conn.execute(
             insert(models.commune),
-            [{**c, "premium_year": PREMIUM_YEAR} for c in COMMUNES],
+            [{**c, "premium_year": year} for c in COMMUNES],
         )
         conn.execute(
             insert(models.postal_code_commune),
             [
                 {
-                    "premium_year": PREMIUM_YEAR,
+                    "premium_year": year,
                     "postal_code": plz,
                     "locality": locality,
                     "bfs_number": bfs,
@@ -290,9 +309,9 @@ def _seed(engine: Engine, files: SourceFiles) -> None:
             [
                 {
                     "kind": "premiums_ch",
-                    "premium_year": PREMIUM_YEAR,
+                    "premium_year": year,
                     "source_url": "https://example.invalid/Praemien_CH.csv",
-                    "file_name": "praemien_ch_sample.csv",
+                    "file_name": files.premiums.name,
                     "content_sha256": "0" * 64,
                     "byte_size": 1234,
                     "row_count": 35,
@@ -316,10 +335,11 @@ def settings(tmp_path: Path) -> Settings:
 
 @pytest.fixture
 def source_layout() -> str:
-    """Which file layout the test database is loaded from: ``"2026"`` or ``"2027"``.
+    """What the test database is loaded from.
 
-    Override it in a module with a parametrised fixture of the same name to run
-    that module's tests against both.
+    ``"2026"``: the real 2026 fixtures. ``"2027"``: the same rows rewritten in
+    the 2027 layout. ``"2027-data"``: the real 2027 fixtures. Override it in a
+    module, parametrised if needed, to change what that module runs against.
     """
     return "2026"
 
@@ -330,10 +350,20 @@ def files_2027(tmp_path: Path) -> SourceFiles:
     return write_2027_layout(tmp_path / "layout-2027")
 
 
+def _source_files(layout: str, tmp_path: Path) -> SourceFiles:
+    if layout == "2026":
+        return FILES_2026
+    if layout == "2027":
+        return write_2027_layout(tmp_path / "layout-2027")
+    if layout == "2027-data":
+        return FILES_2027
+    raise ValueError(f"unknown source_layout {layout!r}")
+
+
 @pytest.fixture
 def engine(settings: Settings, source_layout: str, tmp_path: Path) -> Engine:
     """A populated test database."""
-    files = FILES_2026 if source_layout == "2026" else write_2027_layout(tmp_path / "layout-2027")
+    files = _source_files(source_layout, tmp_path)
     engine = create_db_engine(settings)
     init_schema(engine)
     _seed(engine, files)

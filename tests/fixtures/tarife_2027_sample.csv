@@ -1,0 +1,144 @@
+﻿Versicherer,Geschäftsjahr,Erhebungsjahr,Kategorie,Tarif,Tariftyp,Name_DE,Name_FR,Name_IT,Name_EN
+8,2027,2026,MOD,01_016,PRAXIS,Gesundheitspraxisversicherung,Assurance Cabinets de santé,Assicurazione Studi medici della salute,Health Maintenance Organisation Insurance 
+8,2027,2026,MOD,01_046,PRAXIS,Hausarztversicherung Profit,Assurance du médecin de famille Profit,Assicurazione del medico di famiglia Profit,Profit Family Doctor Insurance
+8,2027,2026,MOD,01_131,TEL_DIG,Callmed,Callmed,Callmed,Callmed
+8,2027,2026,MOD,01_170,FLEX,Multimed,Multimed,Multimed,Multimed
+8,2027,2026,MOD,BASE,BASE,Grundversicherung,Assurance de base,Assicurazione di base,Basic health insurance
+32,2027,2026,MOD,BASE,BASE,Grundversicherung,Assurance de base,Assicurazione di base,Basic health insurance
+32,2027,2026,MOD,CASAMED,PRAXIS,CASAMED,CASAMED,CASAMED,CASAMED
+32,2027,2026,MOD,SMARTMED,TEL_DIG,SMARTMED,SMARTMED,SMARTMED,SMARTMED
+134,2027,2026,MOD,BASE,BASE,Grundversicherung,Assurance de base,Assicurazione di base,Basic health insurance
+194,2027,2026,MOD,BASE,BASE,Grundversicherung,Assurance de base,Assicurazione di base,Basic health insurance
+194,2027,2026,MOD,HAM,PRAXIS,Hausarztmodell,Modèle du médecin de famille,Modello del medico di famiglia,General practitioner model
+194,2027,2026,MOD,HMO plus,PRAXIS,HMO plus,HMO plus,HMO plus,HMO plus
+194,2027,2026,MOD,Telmed,TEL_DIG,sumis24Telmed,sumis24Telmed,sumis24Telmed,sumis24Telmed
+246,2027,2026,MOD,BASE,BASE,Grundversicherung,Assurance de base,Assicurazione di base,Basic health insurance
+246,2027,2026,MOD,Casa,PRAXIS,Casa,Casa,Casa,Casa
+246,2027,2026,MOD,Medcasa,PRAXIS,Medcasa,Medcasa,Medcasa,Medcasa
+246,2027,2026,MOD,Regiomed,PRAXIS,Regiomed,Regiomed,Regiomed,Regiomed
+246,2027,2026,MOD,sanmed24,TEL_DIG,sanmed24,sanmed24,sanmed24,sanmed24
+290,2027,2026,MOD,BASE,BASE,Grundversicherung,Assurance de base,Assicurazione di base,Basic health insurance
+290,2027,2026,MOD,HAM_DOC,PRAXIS,MyDoc,MyDoc,MyDoc,MyDoc
+290,2027,2026,MOD,HMO_01,PRAXIS,HMO,HMO,HMO,HMO
+290,2027,2026,MOD,smartDoc,TEL_DIG,smartDoc,smartDoc,smartDoc,smartDoc
+312,2027,2026,MOD,BASE,BASE,Grundversicherung,Assurance de base,Assicurazione di base,Basic health insurance
+312,2027,2026,MOD,CareMed,PRAXIS,CareMed,CareMed,CareMed,CareMed
+312,2027,2026,MOD,FlexCare,FLEX,FlexCare,FlexCare,FlexCare,FlexCare
+312,2027,2026,MOD,HMO,PRAXIS,HMO,HMO,HMO,HMO
+312,2027,2026,MOD,SmartCare,TEL_DIG,SmartCare,SmartCare,SmartCare,SmartCare
+312,2027,2026,MOD,TelFirst,TEL_DIG,TelFirst,TelFirst,TelFirst,TelFirst
+343,2027,2026,MOD,BASE,BASE,Grundversicherung,Assurance de base,Assicurazione di base,Basic health insurance
+343,2027,2026,MOD,OptiMed,PRAXIS,OptiMed (Ärztenetz),OptiMed (Réseau de soins),OptiMed (Rete di cure),OptiMed (Healthcare network)
+343,2027,2026,MOD,PrimaCare,PRAXIS,PrimaCare (Hausarzt),PrimaCare (Médecin de famille),PrimaCare (Medico di famiglia),PrimaCare (Family doctor)
+343,2027,2026,MOD,PrimaFlex,FLEX,PrimaFlex (flexibles Modell),PrimaFlex (Modèle flexible),PrimaFlex (Modello flessibile),PrimaFlex (Flexible model)
+343,2027,2026,MOD,SanaTel,TEL_DIG,SanaTel (Telemedizin),SanaTel (Télémédecine),SanaTel (Telemedicina),SanaTel (Telemedicine)
+360,2027,2026,MOD,BASE,BASE,Grundversicherung,Assurance de base,Assicurazione di base,Basic health insurance
+360,2027,2026,MOD,HM1,PRAXIS,Hausmed,Hausmed,Hausmed,Hausmed
+360,2027,2026,MOD,TM1,TEL_DIG,Telmed,Telmed,Telmed,Telmed
+376,2027,2026,MOD,BASE,BASE,Grundversicherung,Assurance de base,Assicurazione di base,Basic health insurance
+376,2027,2026,MOD,HMO_A,PRAXIS,KPTwin.plus - HMO-Hausarzt,KPTwin.plus - Médecin de famille dans centre HMO,KPTwin.plus - Medico di famiglia HMO,KPTwin.plus - HMO GP
+376,2027,2026,MOD,KPTwindoc,PRAXIS,KPTwin.doc - Hausarzt,KPTwin.doc - Médecin de famille,KPTwin.doc - Medico di famiglia,KPTwin.doc - GP (family doctor)
+376,2027,2026,MOD,KPTwineasy,TEL_DIG,KPTwin.easy - Telmed,KPTwin.easy - Télémédecine,KPTwin.easy - Telemedicina,KPTwin.easy - Telemedicine
+376,2027,2026,MOD,KPTwinsmart,TEL_DIG,KPTwin.smart - Hausarzt mit App,KPTwin.smart - Médecin de famille avec app,KPTwin.smart - Medico di famiglia e app,KPTwin.smart - GP with app
+376,2027,2026,MOD,KPTwinwin,FLEX,"KPTwin.win - Hausarzt, Telmed und Apotheke","KPTwin.win - Médecin de famille, télémédecine et pharmacie","KPTwin.win - Medico di famiglia, telemedicina e farmacia","KPTwin.win - GP, telemedicine and pharmacy"
+455,2027,2026,MOD,BASE,BASE,Grundversicherung,Assurance de base,Assicurazione di base,Basic health insurance
+455,2027,2026,MOD,HAM_CBA,PRAXIS,ÖKK CASAMED HAUSARZT,ÖKK CASAMED MÉDECIN DE FAMILLE,ÖKK CASAMED MEDICO DI FAMIGLIA,ÖKK CASAMED GENERAL PRACTITIONER
+455,2027,2026,MOD,HMO_Kt,PRAXIS,ÖKK CASAMED HMO,ÖKK CASAMED HMO,ÖKK CASAMED HMO,ÖKK CASAMED HMO
+455,2027,2026,MOD,Select,FLEX,ÖKK CASAMED SELECT,ÖKK CASAMED SELECT,ÖKK CASAMED SELECT,ÖKK CASAMED SELECT
+455,2027,2026,MOD,Telmed,TEL_DIG,ÖKK CASAMED 24,ÖKK CASAMED 24,ÖKK CASAMED 24,ÖKK CASAMED 24
+509,2027,2026,MOD,BASE,BASE,Grundversicherung,Assurance de base,Assicurazione di base,Basic health insurance
+509,2027,2026,MOD,DIV_XBA,FLEX,flexhelp24,flexhelp24,flexhelp24,flexhelp24
+509,2027,2026,MOD,HAM_CBA,PRAXIS,casamed hausarzt,casamed médecin de famille,casamed medico di famiglia,casamed family doctor
+509,2027,2026,MOD,HAM_GBA,TEL_DIG,callmed 24,callmed 24,callmed 24,callmed 24
+509,2027,2026,MOD,HAM_PBA,FLEX,casamed pharm,casamed pharm,casamed pharm,casamed pharm
+509,2027,2026,MOD,HMO,PRAXIS,casamed hmo,casamed hmo,casamed hmo,casamed hmo
+881,2027,2026,MOD,BASE,BASE,Grundversicherung,Assurance de base,Assicurazione di base,Basic health insurance
+881,2027,2026,MOD,HAM_MC,PRAXIS,EGK-Care,EGK-Care,EGK-Care,EGK-Care
+881,2027,2026,MOD,Tel_Care,TEL_DIG,EGK-TelCare,EGK-TelCare,EGK-TelCare,EGK-TelCare
+923,2027,2026,MOD,BASE,BASE,Grundversicherung,Assurance de base,Assicurazione di base,Basic health insurance
+923,2027,2026,MOD,HOMECARE,PRAXIS,HomeCare,HomeCare,HomeCare,HomeCare
+923,2027,2026,MOD,SMARTMED,TEL_DIG,SmartMed,SmartMed,SmartMed,SmartMed
+923,2027,2026,MOD,TELCARE,TEL_DIG,TelCare,TelCare,TelCare,TelCare
+941,2027,2026,MOD,BASE,BASE,Grundversicherung,Assurance de base,Assicurazione di base,Basic health insurance
+941,2027,2026,MOD,Digimed,TEL_DIG,Digimed,Digimed,Digimed,Digimed
+941,2027,2026,MOD,Telmed,TEL_DIG,Telmed,Telmed,Telmed,Telmed
+966,2027,2026,MOD,BASE,BASE,Grundversicherung,Assurance de base,Assicurazione di base,Basic health insurance
+966,2027,2026,MOD,Sparmed,PRAXIS,Sparmed,Sparmed,Sparmed,Sparmed
+1318,2027,2026,MOD,BASE,BASE,Grundversicherung,Assurance de base,Assicurazione di base,Basic health insurance
+1318,2027,2026,MOD,RS,PRAXIS,Hausarztversicherung,Hausarztversicherung,Hausarztversicherung,Hausarztversicherung
+1384,2027,2026,MOD,BASE,BASE,Grundversicherung,Assurance de base,Assicurazione di base,Basic health insurance
+1384,2027,2026,MOD,Bestcare (BESTCARE),PRAXIS,Favorit Bestcare,Favorit Bestcare,Favorit Bestcare,Favorit Bestcare
+1384,2027,2026,MOD,Casa,PRAXIS,Favorit Casa,Favorit Casa,Favorit Casa,Favorit Casa
+1384,2027,2026,MOD,Medica (MEDICA),PRAXIS,Favorit Medica,Favorit Medica,Favorit Medica,Favorit Medica
+1384,2027,2026,MOD,Medpharm (PHARMA),FLEX,Favorit Medpharm,Favorit Medpharm,Favorit Medpharm,Favorit Medpharm
+1384,2027,2026,MOD,Multichoice (MULTICHOICE),FLEX,Favorit Multichoice,Favorit Multichoice,Favorit Multichoice,Favorit Multichoice
+1384,2027,2026,MOD,Santé (HMO),PRAXIS,Favorit Santé,Favorit Santé,Favorit Santé,Favorit Santé
+1384,2027,2026,MOD,Telmed,TEL_DIG,Favorit Telmed,Favorit Telmed,Favorit Telmed,Favorit Telmed
+1386,2027,2026,MOD,BASE,BASE,Grundversicherung,Assurance de base,Assicurazione di base,Basic health insurance
+1386,2027,2026,MOD,COC,FLEX,Combi Care,Combi Care,Combi Care,Combi Care
+1386,2027,2026,MOD,MCMIT,PRAXIS,Managed Care,Managed Care,Managed Care,Managed Care
+1386,2027,2026,MOD,MD,PRAXIS,Med Direct,Med Direct,Med Direct,Med Direct
+1386,2027,2026,MOD,TDO,TEL_DIG,Tel Doc,Tel Doc,Tel Doc,Tel Doc
+1401,2027,2026,MOD,BASE,BASE,Grundversicherung,Assurance de base,Assicurazione di base,Basic health insurance
+1401,2027,2026,MOD,HAS,PRAXIS,HausarztmodellDE,HausarztmodellFR,HausarztmodellIT,HausarztmodellEN
+1401,2027,2026,MOD,sanmed24,TEL_DIG,sanmed24DE,sanmed24FR,sanmed24IT,sanmed24EN
+1479,2027,2026,MOD,BASE,BASE,Grundversicherung,Assurance de base,Assicurazione di base,Basic health insurance
+1479,2027,2026,MOD,OptiMed,PRAXIS,OptiMed (Ärztenetz),OptiMed (Réseau de soins),OptiMed (Rete di cure),OptiMed (Healthcare network)
+1479,2027,2026,MOD,PrimaCare,PRAXIS,PrimaCare (Hausarzt),PrimaCare (Médecin de famille),PrimaCare (Medico di famiglia),PrimaCare (Family doctor)
+1479,2027,2026,MOD,PrimaFlex,FLEX,PrimaFlex (flexibles Modell),PrimaFlex (Modèle flexible),PrimaFlex (Modello flessibile),PrimaFlex (Flexible model)
+1479,2027,2026,MOD,SanaTel,TEL_DIG,SanaTel (Telemedizin),SanaTel (Télémédecine),SanaTel (Telemedicina),SanaTel (Telemedicine)
+1509,2027,2026,MOD,BASE,BASE,Grundversicherung,Assurance de base,Assicurazione di base,Basic health insurance
+1509,2027,2026,MOD,Hausarztmodell 1 (NetMed 1),PRAXIS,Hausarztmodell 1,Médecin de famille 1,Medico di famiglia 1,Family Doctor 1
+1509,2027,2026,MOD,Hausarztmodell 2 (NetMed 2),PRAXIS,Hausarztmodell 2,Médecin de famille 2,Medico di famiglia 2,Family Doctor 2
+1509,2027,2026,MOD,Hausarztmodell 3 (NetMed 3),PRAXIS,Hausarztmodell 3,Médecin de famille 3,Medico di famiglia 3,Family Doctor 3
+1509,2027,2026,MOD,Hausarztmodell 4 (CareMed),PRAXIS,Hausarztmodell 4,Médecin de famille 4,Medico di famiglia 4,Family Doctor 4
+1509,2027,2026,MOD,MultiAccess (Medbase MultiAccess),FLEX,MultiAccess,MultiAccess,MultiAccess,MultiAccess
+1509,2027,2026,MOD,TelMed Basic,TEL_DIG,TelMed Basic,TelMed Basic,TelMed Basic,TelMed Basic
+1509,2027,2026,MOD,TelMed Plus,TEL_DIG,TelMed Plus,TelMed Plus,TelMed Plus,TelMed Plus
+1535,2027,2026,MOD,BASE,BASE,Grundversicherung,Assurance de base,Assicurazione di base,Basic health insurance
+1535,2027,2026,MOD,OptiMed,PRAXIS,OptiMed (Ärztenetz),OptiMed (Réseau de soins),OptiMed (Rete di cure),OptiMed (Healthcare network)
+1535,2027,2026,MOD,PrimaCare,PRAXIS,PrimaCare (Hausarzt),PrimaCare (Médecin de famille),PrimaCare (Medico di famiglia),PrimaCare (Family doctor)
+1535,2027,2026,MOD,PrimaFlex,FLEX,PrimaFlex (flexibles Modell),PrimaFlex (Modèle flexible),PrimaFlex (Modello flessibile),PrimaFlex (Flexible model)
+1535,2027,2026,MOD,SanaTel,TEL_DIG,SanaTel (Telemedizin),SanaTel (Télémédecine),SanaTel (Telemedicina),SanaTel (Telemedicine)
+1542,2027,2026,ALT,E1,AKA_03_ERW,Erwachsene,Adulte,Adulto,Adult
+1542,2027,2026,ALT,J1,AKA_02_JUG,Junge Erwachsene,Jeune adulte,Giovane adulto,Young adult
+1542,2027,2026,ALT,K1,AKA_01_KIN,Kinderprämie - ohne zusätzlichen Rabatt,Prime enfant - sans réduction supplémentaire,Premio bambino - senza sconto supplementare,Child premium - no additional discount
+1542,2027,2026,ALT,K4,AKA_01_KIN,"Kinderprämie mit Rabatt ab dem 2. Kind, gültig für alle Kinder",Prime enfant avec réduction à partir du 2ème enfant et s'applique à tous les enfants,"Premio bambino con sconto a partire dal 2° figlio, applicabile a tutti i figli",Child premium discount from the 2nd child and applies to all children
+1542,2027,2026,ALT,K5,AKA_01_KIN,"Kinderprämie mit Rabatt ab dem 3. Kind, gültig für alle Kinder",Prime enfant avec réduction à partir du 3ème enfant et s'applique à tous les enfants,"Premio bambino con sconto a partire dal 3° figlio, applicabile a tutti i figli",Child premium discount from the 3rd child and applies to all children
+1542,2027,2026,MOD,BASE,BASE,Grundversicherung,Assurance de base,Assicurazione di base,Basic health insurance
+1542,2027,2026,MOD,FV,FLEX,FeminaVita,FeminaVita,FeminaVita,FeminaVita
+1542,2027,2026,MOD,HS,FLEX,Hausspital,Hôpital de confiance,Ospedale di fiducia,Hausspital
+1542,2027,2026,MOD,MF,PRAXIS,Hausarzt,Médecin de famille,Medico di famiglia,Family doctor
+1542,2027,2026,MOD,MediTel,TEL_DIG,MediTel,MediTel,MediTel,MediTel
+1542,2027,2026,MOD,PRV,FLEX,PreventoMed,PreventoMed,PreventoMed,PreventoMed
+1542,2027,2026,MOD,QM,FLEX,QualiMed,QualiMed,QualiMed,QualiMed
+1542,2027,2026,MOD,RPH,PRAXIS,PharMed,PharMed,PharMed,PharMed
+1542,2027,2026,MOD,RS,PRAXIS,Gesundheitsnetz,Réseau de soins,Rete delle cure,Care network
+1555,2027,2026,MOD,BASE,BASE,Grundversicherung,Assurance de base,Assicurazione di base,Basic health insurance
+1555,2027,2026,MOD,COC,FLEX,Combi Care,Combi Care,Combi Care,Combi Care
+1555,2027,2026,MOD,HMO_PLUS,PRAXIS,HMO plus,HMO plus,HMO plus,HMO plus
+1555,2027,2026,MOD,MCA,TEL_DIG,Med Call,Med Call,Med Call,Med Call
+1555,2027,2026,MOD,MCMIT,PRAXIS,Managed Care,Managed Care,Managed Care,Managed Care
+1555,2027,2026,MOD,MD,PRAXIS,Med Direct,Med Direct,Med Direct,Med Direct
+1555,2027,2026,MOD,TCA,TEL_DIG,Tel Care,Tel Care,Tel Care,Tel Care
+1555,2027,2026,MOD,TDO,TEL_DIG,Tel Doc,Tel Doc,Tel Doc,Tel Doc
+1555,2027,2026,MOD,VIVA,PRAXIS,VIVA - Gesundheitsplan,Plan de santé VIVA,Piano sanitario VIVA,VIVA health plan
+1560,2027,2026,MOD,AGRIcontact,TEL_DIG,AGRIcontact,AGRIcontact,AGRIcontact,AGRIcontact
+1560,2027,2026,MOD,AGRIeco,PRAXIS,AGRIeco,AGRIeco,AGRIeco,AGRIeco
+1560,2027,2026,MOD,AGRIsmart,TEL_DIG,AGRIsmart,AGRIsmart,AGRIsmart,AGRIsmart
+1560,2027,2026,MOD,BASE,BASE,Grundversicherung,Assurance de base,Assicurazione di base,Basic health insurance
+1562,2027,2026,MOD,BASE,BASE,Grundversicherung,Assurance de base,Assicurazione di base,Basic health insurance
+1562,2027,2026,MOD,BFP_BF,PRAXIS,Helsana BeneFit PLUS Hausarzt R4,Helsana BeneFit PLUS Médecin de famille R4,Helsana BeneFit PLUS Medico di famiglia R4,Helsana BeneFit PLUS General Practitioner R4
+1562,2027,2026,MOD,BFP_CA,PRAXIS,Helsana BeneFit PLUS Hausarzt R3,Helsana BeneFit PLUS Médecin de famille R3,Helsana BeneFit PLUS Medico di famiglia R3,Helsana BeneFit PLUS General Practitioner R3
+1562,2027,2026,MOD,BFP_CM,PRAXIS,Helsana BeneFit PLUS Hausarzt R2,Helsana BeneFit PLUS Médecin de famille R2,Helsana BeneFit PLUS Medico di famiglia R2,Helsana BeneFit PLUS General Practitioner R2
+1562,2027,2026,MOD,BFP_CP,PRAXIS,Helsana BeneFit PLUS Hausarzt R1,Helsana BeneFit PLUS Médecin de famille R1,Helsana BeneFit PLUS Medico di famiglia R1,Helsana BeneFit PLUS General Practitioner R1
+1562,2027,2026,MOD,BFP_CPF,FLEX,Helsana BeneFit PLUS Flexmed ,Helsana BeneFit PLUS Flexmed ,Helsana BeneFit PLUS Flexmed ,Helsana BeneFit PLUS Flexmed 
+1562,2027,2026,MOD,BFP_TEL,TEL_DIG,Helsana BeneFit PLUS Telemed,Helsana BeneFit PLUS Telemed,Helsana BeneFit PLUS Telemed,Helsana BeneFit PLUS Telemed
+1562,2027,2026,MOD,PREMED,TEL_DIG,Helsana Premed-24,Helsana Premed-24,Helsana Premed-24,Helsana Premed-24
+1568,2027,2026,MOD,BASE,BASE,Grundversicherung,Assurance de base,Assicurazione di base,Basic health insurance
+1568,2027,2026,MOD,COC,FLEX,Combi Care,Combi Care,Combi Care,Combi Care
+1568,2027,2026,MOD,MCA,TEL_DIG,Med Call,Med Call,Med Call,Med Call
+1568,2027,2026,MOD,MCMIT,PRAXIS,Managed Care,Managed Care,Managed Care,Managed Care
+1568,2027,2026,MOD,MCOHNE,PRAXIS,Managed Care ohne Capitation,Managed Care sans capitation,Managed Care senza capitation,Managed Care without capitation
+1568,2027,2026,MOD,MD,PRAXIS,Med Direct,Med Direct,Med Direct,Med Direct
+1568,2027,2026,MOD,TDO,TEL_DIG,Tel Doc,Tel Doc,Tel Doc,Tel Doc

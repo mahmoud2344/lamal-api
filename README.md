@@ -17,11 +17,11 @@ Swiss health insurance premiums, kept in sync with the official FOPH/BAG open da
 curl "http://localhost:8000/v1/premiums?postal_code=1003&birth_year=1990&franchise=2500&accident_coverage=false"
 ```
 
-> Verified against priminfo.admin.ch: for an adult in Lausanne with a CHF 2,500 franchise
-> and no accident cover, this returns the same 105 offers, in the same order, **to the
-> centime**. The test suite pins that, and [docs/VERIFICATION.md](docs/VERIFICATION.md)
-> gives you 13 scenarios with the official query and the API call side by side so you can
-> check it yourself.
+> Verified against priminfo.admin.ch for premium years 2026 and 2027: for an adult in
+> Lausanne with a CHF 2,500 franchise and no accident cover, this returns the same 106 offers
+> for 2027, in the same order, **to the centime**. The test suite pins that, and
+> [docs/VERIFICATION.md](docs/VERIFICATION.md) gives you the official query and the API call
+> side by side so you can check it yourself.
 
 ---
 
@@ -34,7 +34,7 @@ docker compose up -d
 ```
 
 That is the whole setup. The container serves immediately and downloads the official data
-in the background (~23 MB, typically one to three minutes — the federal servers occasionally
+in the background (~26 MB, typically one to three minutes — the federal servers occasionally
 answer 503 and the fetcher retries with backoff). Watch it land:
 
 ```bash
@@ -48,7 +48,7 @@ curl -s http://localhost:8000/health
 ```
 
 ```json
-{ "status": "ok", "database": "ok", "data_loaded": true, "premium_years": [2026] }
+{ "status": "ok", "database": "ok", "data_loaded": true, "premium_years": [2027] }
 ```
 
 Interactive API docs are at <http://localhost:8000/docs>.
@@ -73,7 +73,7 @@ curl -s "http://localhost:8000/v1/premiums?postal_code=1003&birth_year=1990&fran
 ```jsonc
 {
   "query": {
-    "premium_year": 2026,
+    "premium_year": 2027,
     "birth_year": 1990,
     "age_class": "AKL-ERW",
     "age_subgroup": "",
@@ -92,20 +92,20 @@ curl -s "http://localhost:8000/v1/premiums?postal_code=1003&birth_year=1990&fran
       "ambiguous": false
     }
   },
-  "pagination": { "limit": 3, "offset": 0, "total": 105 },
+  "pagination": { "limit": 3, "offset": 0, "total": 106 },
   "results": [
     {
-      "insurer": { "bag_number": 1509, "name": "Sanitas" },
+      "insurer": { "bag_number": 1542, "name": "Assura-Basis SA" },
       "tariff": {
-        "code": "TelMed (Compact One)",
-        "type": "TAR-DIV",
-        "label": "TelMed (Compact One)",
-        "name_de": "TelMed (Compact One)",
-        "name_fr": "TelMed (Compact One)",
-        "name_it": "TelMed (Compact One)"
+        "code": "MediTel",
+        "type": "TAR-TEL_DIG",
+        "label": "MediTel",
+        "name_de": "MediTel",
+        "name_fr": "MediTel",
+        "name_it": "MediTel"
       },
-      "premium_chf": 412.2,
-      "premium_centimes": 41220,
+      "premium_chf": 427.0,
+      "premium_centimes": 42700,
       "franchise_chf": 2500,
       "franchise_level": "FRAST6",
       "canton": "VD",
@@ -114,20 +114,20 @@ curl -s "http://localhost:8000/v1/premiums?postal_code=1003&birth_year=1990&fran
       "age_subgroup": "",
       "accident_coverage": false,
       "is_standard_franchise": false,
-      "premium_year": 2026
+      "premium_year": 2027
     },
     {
-      "insurer": { "bag_number": 8, "name": "CSS" },
-      "tariff": { "code": "01_170", "type": "TAR-HAM", "label": "Multimed", "name_fr": "Multimed" },
-      "premium_chf": 416.2,
-      "premium_centimes": 41620
+      "insurer": { "bag_number": 1509, "name": "Sanitas" },
+      "tariff": { "code": "TelMed Basic", "type": "TAR-TEL_DIG", "label": "TelMed Basic" },
+      "premium_chf": 428.05,
+      "premium_centimes": 42805
       // ...
     },
     {
-      "insurer": { "bag_number": 1542, "name": "Assura-Basis SA" },
-      "tariff": { "code": "RPH", "type": "TAR-HAM", "label": "PharMed", "name_fr": "PharMed" },
-      "premium_chf": 419.1,
-      "premium_centimes": 41910
+      "insurer": { "bag_number": 509, "name": "Vivao Sympany" },
+      "tariff": { "code": "DIV_XBA", "type": "TAR-FLEX", "label": "flexhelp24" },
+      "premium_chf": 430.2,
+      "premium_centimes": 43020
       // ...
     }
   ],
@@ -135,10 +135,11 @@ curl -s "http://localhost:8000/v1/premiums?postal_code=1003&birth_year=1990&fran
 }
 ```
 
-Narrow it to Telmed and other alternative models, cheapest first:
+Narrow it to one model type, cheapest first. Types follow the FOPH's classification for the
+premium year, which changed in 2027 — see [the tariff-type rule](#correctness-the-rules-that-matter):
 
 ```bash
-curl -s "http://localhost:8000/v1/premiums?postal_code=1003&birth_year=1990&franchise=2500&accident_coverage=false&tariff_type=DIV"
+curl -s "http://localhost:8000/v1/premiums?postal_code=1003&birth_year=1990&franchise=2500&accident_coverage=false&tariff_type=TEL_DIG"
 ```
 
 ### Price a whole family
@@ -154,19 +155,19 @@ curl -s "http://localhost:8000/v1/households?postal_code=8001\
 
 ```jsonc
 {
-  "query": { "premium_year": 2026, "child_count": 3, "people": [ /* ... */ ] },
+  "query": { "premium_year": 2027, "child_count": 3, "people": [ /* ... */ ] },
   "results": [
     {
       "insurer": { "bag_number": 194, "name": "Sumiswalder" },
-      "tariff": { "code": "BASE", "type": "TAR-BASE", "label": "Grundversicherung" },
-      "total_chf": 1489.2,
-      "total_centimes": 148920,
+      "tariff": { "code": "BASE", "type": "TAR-BASE", "label": "BASE", "name_de": "Grundversicherung" },
+      "total_chf": 1549.1,
+      "total_centimes": 154910,
       "people": [
-        { "index": 1, "birth_year": 1985, "age_class": "AKL-ERW", "age_subgroup": "",   "premium_chf": 567.6 },
-        { "index": 2, "birth_year": 1988, "age_class": "AKL-ERW", "age_subgroup": "",   "premium_chf": 567.6 },
-        { "index": 3, "birth_year": 2015, "age_class": "AKL-KIN", "age_subgroup": "K1", "child_rank": 1, "premium_chf": 141.6 },
-        { "index": 4, "birth_year": 2017, "age_class": "AKL-KIN", "age_subgroup": "K1", "child_rank": 2, "premium_chf": 141.6 },
-        { "index": 5, "birth_year": 2019, "age_class": "AKL-KIN", "age_subgroup": "K3", "child_rank": 3, "premium_chf": 70.8 }
+        { "index": 1, "birth_year": 1985, "age_class": "AKL-ERW", "age_subgroup": "",   "premium_chf": 590.4 },
+        { "index": 2, "birth_year": 1988, "age_class": "AKL-ERW", "age_subgroup": "",   "premium_chf": 590.4 },
+        { "index": 3, "birth_year": 2015, "age_class": "AKL-KIN", "age_subgroup": "K1", "child_rank": 1, "premium_chf": 147.3 },
+        { "index": 4, "birth_year": 2017, "age_class": "AKL-KIN", "age_subgroup": "K1", "child_rank": 2, "premium_chf": 147.3 },
+        { "index": 5, "birth_year": 2019, "age_class": "AKL-KIN", "age_subgroup": "K3", "child_rank": 3, "premium_chf": 73.7 }
       ]
     }
   ]
@@ -183,8 +184,8 @@ curl -s "http://localhost:8000/v1/regions?postal_code=1003"
 
 ```jsonc
 {
-  "premium_year": 2026,
-  "region_year": 2026,
+  "premium_year": 2027,
+  "region_year": 2027,
   "query": {
     "postal_code": 1003,
     "resolved": {
@@ -205,9 +206,9 @@ curl -s "http://localhost:8000/v1/franchises?birth_year=2015"
 
 ```jsonc
 {
-  "premium_year": 2026,
+  "premium_year": 2027,
   "birth_year": 2015,
-  "age_at_year_end": 11,
+  "age_at_year_end": 12,
   "age_class": "AKL-KIN",
   "age_class_label": "Children (0–18)",
   "age_subgroup_default": "K1",
@@ -233,21 +234,21 @@ curl -s "http://localhost:8000/v1/meta"
 {
   "service": "lamal-api",
   "version": "0.1.0",
-  "premium_years": [2026],
-  "current_premium_year": 2026,
-  "region_years": [2026],
-  "last_sync_at": "2026-08-18T23:12:28.967217",
-  "premium_row_count": 217472,
+  "premium_years": [2027],
+  "current_premium_year": 2027,
+  "region_years": [2027],
+  "last_sync_at": "2026-09-29T19:33:29.762927",
+  "premium_row_count": 219916,
   "sources": [
     {
       "kind": "premiums_ch",
-      "premium_year": 2026,
+      "premium_year": 2027,
       "file_name": "Praemien_CH.csv",
       "source_url": "https://opendata.bagnet.ch/?r=/download&path=L1ByYWVtaWVuL1Byw6RtaWVuX0NILmNzdg%3D%3D",
-      "content_sha256": "1c6022adc79cff55e67562840e32754e434edebce419cc7c257cbba77e142ce5",
-      "byte_size": 22545492,
-      "row_count": 217472,
-      "fetched_at": "2026-08-18T23:12:27.835001"
+      "content_sha256": "957fef82f47eb8d8243e01be17699d864b98a741c466f5d07015c6e91fecfdaa",
+      "byte_size": 25832930,
+      "row_count": 219916,
+      "fetched_at": "2026-09-29T19:33:27.823334"
     }
   ],
   "dataset_page": "https://opendata.swiss/en/dataset/health-insurance-premiums"
@@ -335,9 +336,10 @@ All JSON, all versioned under `/v1`. OpenAPI schema at `/openapi.json`, Swagger 
 
 Premiums are **looked up, never calculated**. Every figure returned is a value the FOPH
 approved and published. The hard part is returning the *right rows*, and these are the
-rules that decide it. Each one is covered by tests in
-[`tests/test_golden_priminfo.py`](tests/test_golden_priminfo.py), and reproducible by hand
-with the scenarios in [docs/VERIFICATION.md](docs/VERIFICATION.md).
+rules that decide it. Each one is covered by tests pinned to priminfo's figures —
+[`tests/test_golden_priminfo.py`](tests/test_golden_priminfo.py) for 2026 and
+[`tests/test_golden_priminfo_2027.py`](tests/test_golden_priminfo_2027.py) for 2027 — and
+reproducible by hand with the scenarios in [docs/VERIFICATION.md](docs/VERIFICATION.md).
 
 **Premium region, not canton.** Prices vary by premium region (`PR-REG CH0`–`CH3`), not by
 canton. A postal code is resolved to a commune (BFS number), and the commune to a region.
@@ -362,8 +364,10 @@ later children get the cheaper rate, the first two keep paying `K1`. Insurers pu
 `K4`/`K5` (*"3 und mehr Kinder"*) are **count-based**: once the family reaches a given size,
 *every* child moves to the cheaper band — Assura has three of them. Both were established
 against priminfo across two cantons, two tariff types and households of one to five, and are
-pinned in [`tests/test_household.py`](tests/test_household.py). Adding single-person lookups
-instead overcharges a three-child family by CHF 70.80/month with Sumiswalder alone.
+pinned in [`tests/test_household.py`](tests/test_household.py) and, for 2027,
+[`tests/test_golden_priminfo_2027.py`](tests/test_golden_priminfo_2027.py). Adding
+single-person lookups instead overcharges a three-child family by CHF 73.60/month in 2027
+with Sumiswalder alone.
 
 **Franchise scales differ by age class.** Children 0/100/200/300/400/500/600; adults and
 young adults 300/500/1000/1500/2000/2500. Both contain 300 and 500, which is why the age
@@ -376,8 +380,9 @@ Visana's *HMO plus*, for instance, is available in Aefligen (BFS 401) but not in
 ignoring it quotes products the person cannot buy.
 
 **Never de-duplicate per insurer.** One insurer can sell several named tariffs of the same
-type at different prices. Helsana offers both *BeneFit PLUS Hausarzt R1* and *BeneFit PLUS
-Flexmed R1* at CHF 420.20 in Lausanne. Both are returned; they are different products.
+type. In Lausanne in 2027, Sanitas sells *Hausarztmodell 1* to *4*, all `TAR-PRAXIS`, at
+CHF 444.25, 476.65, 483.20 and 483.20. All four are returned; they are different products,
+even the two at the same price.
 
 **`isBaseP` is a trap — this API does not use it.** In `Prämien_CH.csv` the `isBaseP` flag
 is set to `1` only on the *with-accident* half of the standard-model rows. Filtering on it
@@ -398,11 +403,11 @@ centimes. `premium_centimes` is the authoritative value; `premium_chf` is a conv
 
 ### One known difference from priminfo
 
-priminfo's results table subtracts a **`Vergütung` of CHF 5.15/month** (the redistribution
-of the federal environmental incentive levies) to show a net figure. That amount is not
-part of the open data. lamal-api returns the **gross approved premium**, which is
-priminfo's `Prämie` column — so a comparison should be made against that column, not
-against `Total`.
+priminfo's results table subtracts a **`Vergütung`** (the redistribution of the federal
+environmental incentive levies) to show a net figure. It is set each year — CHF 5.15/month
+in 2026, CHF 4.75/month in 2027 — and is not part of the open data. lamal-api returns the
+**gross approved premium**, which is priminfo's `Prämie` column — so a comparison should be
+made against that column, not against `Total`.
 
 ---
 

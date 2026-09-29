@@ -143,7 +143,7 @@ curl -s "https://api.example.ch/v1/premiums?postal_code=1003&birth_year=1990&fra
 curl -s https://api.example.ch/v1/meta | grep -o '"premium_row_count":[0-9]*'
 ```
 
-`premium_row_count` around **217 000** means the sync worked. If it is `0`, the first sync is
+`premium_row_count` around **220 000** means the sync worked. If it is `0`, the first sync is
 still running or failed — `docker compose logs -f` will say which.
 
 ---

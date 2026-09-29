@@ -98,7 +98,7 @@ docker compose up -d
 docker compose logs -f          # Ctrl-C once you see the sync finish
 ```
 
-First boot downloads ~23 MB of federal data and loads about 217 000 rows. One to three minutes.
+First boot downloads ~26 MB of federal data and loads about 220 000 rows. One to three minutes.
 
 ```bash
 curl -s localhost:8000/health

@@ -72,8 +72,10 @@ version:
 `pytest` runs entirely offline. The fixtures under `tests/fixtures/` are genuine rows taken
 from the published federal files, so assertions are about real premiums.
 
-**`tests/test_golden_priminfo.py` is the important one.** Every expected value in it was
-read off the official comparator at priminfo.admin.ch and must match to the centime. If you
+**The golden tests are the important ones:** `tests/test_golden_priminfo.py` for 2026 and
+`tests/test_golden_priminfo_2027.py` for 2027, whose expected figures sit in
+`tests/fixtures/priminfo_2027.json` next to the priminfo query each came from. Every expected
+value was read off the official comparator at priminfo.admin.ch and must match to the centime. If you
 change how premiums are selected, sorted or filtered, these tests are what tell you whether
 you broke it.
 
@@ -104,9 +106,10 @@ subtly wrong table is worse than not loading one.
 Two changes are known and already handled. Every September the live files are published
 empty for a few weeks before the new year lands; the sync falls back to the newest archive.
 And from premium year 2027 every code is spelled differently; `fetch/vocabulary.py` maps
-both spellings to the one the database stores. The golden tests run against the real 2026
-fixtures and against the same rows rewritten in the 2027 layout (`write_2027_layout` in
-`tests/conftest.py`), so both paths stay covered.
+both spellings to the one the database stores. Real rows from both years are in
+`tests/fixtures/`, and the 2026 golden tests also run on the same rows rewritten in the 2027
+layout (`write_2027_layout` in `tests/conftest.py`), which checks that the two spellings give
+identical answers.
 
 If a sync starts failing after a federal release:
 
@@ -138,8 +141,8 @@ The most valuable bug report this project can get. Please include:
   accident cover), and
 - the output of `GET /v1/meta`, so we know which data snapshot you were on.
 
-Remember that priminfo's results table subtracts CHF 5.15/month (`Vergütung`); compare
-against its **`Prämie`** column.
+Remember that priminfo's results table subtracts a small monthly `Vergütung` (CHF 4.75 in
+2027); compare against its **`Prämie`** column.
 
 ## Code of conduct
 

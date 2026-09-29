@@ -14,6 +14,13 @@ this sheet was run against both systems and matched.
 > reproduce them. The FOPH also reclassified tariff types for 2027, so a `tariff_type` of
 > `HAM`, `HMO` or `DIV` only matches 2026 data; `BASE` works in both years.
 
+**Premium year 2027** was checked against priminfo on 29 September 2026, the day it was
+published: an adult, a child and a young adult, two communes that differ only by a
+commune-restricted model, and families with two and three children. Every priced row matched.
+Those seven queries — with their priminfo links and every figure priminfo showed — are in
+[`tests/fixtures/priminfo_2027.json`](../tests/fixtures/priminfo_2027.json); the matching API
+calls are next to each one.
+
 Assumes the API is at `http://localhost:8000` (`docker compose up -d`).
 
 > **On Windows PowerShell, use `curl.exe`, not `curl`.** Bare `curl` is an alias for
@@ -34,10 +41,10 @@ Assumes the API is at `http://localhost:8000` (`docker compose up -d`).
 Three things differ cosmetically between the two systems. None of them is a defect, and all
 three will bite you if you don't know them.
 
-**1. priminfo subtracts CHF 5.15/month.** Its results table has `Prämie`, `Vergütung` and
-`Total` columns. `Vergütung` is the redistribution of the federal environmental incentive
-levies — it is *not* part of the open data. **Compare against priminfo's `Prämie` column**,
-never `Total`.
+**1. priminfo subtracts a few francs a month.** Its results table has `Prämie`, `Vergütung`
+and `Total` columns. `Vergütung` is the redistribution of the federal environmental incentive
+levies — CHF 5.15/month in 2026, CHF 4.75/month in 2027 — and it is *not* part of the open
+data. **Compare against priminfo's `Prämie` column**, never `Total`.
 
 **2. priminfo pads its table with unpriced rows.** If an insurer doesn't sell the franchise
 you asked for, priminfo still lists it with an em-dash `—` instead of a price. `lamal-api`
@@ -401,7 +408,7 @@ curl -s "http://localhost:8000/v1/meta" | head -20   # confirm which data snapsh
 Every scenario above is also encoded as an automated test:
 
 ```bash
-pytest tests/test_golden_priminfo.py -v
+pytest tests/test_golden_priminfo.py tests/test_golden_priminfo_2027.py -v
 ```
 
 Those run offline against fixtures holding the same published rows, so they keep passing in
