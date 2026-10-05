@@ -104,7 +104,8 @@ First boot downloads ~26 MB of federal data and loads about 220 000 rows. One to
 curl -s localhost:8000/health
 ```
 
-Wait for `"data_loaded":true`. It is normal for this to say `false` for the first minute.
+Wait for `"data_loaded":true`. It is normal for this to say `false` for the first minute;
+`issues` says what is still missing.
 
 ## 7. Put Caddy in front for HTTPS
 
@@ -251,6 +252,6 @@ a fresh `docker compose up -d` on a new one rebuilds everything.
 | Caddy never gets a certificate | Hostname does not resolve to this server (step 3), or port 80 is blocked by ufw or the hPanel firewall |
 | `curl https://…` refused, `localhost:8000` fine | Caddy is not running, or the Caddyfile has the wrong hostname |
 | Everything returns `401` | Working as intended — send `X-API-Key` |
-| `/health` returns `"data_loaded":false` | First sync still running, or it failed — `docker compose logs` |
+| `/health` returns `"data_loaded":false` | First sync still running, or part of it failed — `issues` names the missing part, `docker compose logs` says why |
 | New code not taking effect | You forgot `--build` |
 | Port 8000 reachable from outside | The `ports:` line is still `"8000:8000"` |

@@ -129,23 +129,44 @@ def get_meta(conn: ConnectionDep) -> schemas.MetaResponse:
     tags=["ops"],
 )
 def get_health(conn: ConnectionDep) -> schemas.HealthResponse:
-    """Report database reachability and whether any premium data is loaded.
+    """Report database reachability and whether the service can answer lookups.
 
     Returns 200 even with an empty database so a container that has not yet run
     its first sync is not killed by an orchestrator; inspect ``data_loaded``.
+
+    Premiums alone are not enough: without the commune/postal-code mapping no
+    location can be resolved, so every premium lookup fails. That mapping comes
+    from a separate source (priminfo.admin.ch) and can fail on its own, so both
+    are checked.
     """
     database = "ok"
-    years: list[int] = []
+    premium_years: list[int] = []
+    region_years: list[int] = []
     try:
         conn.execute(text("SELECT 1"))
-        years = queries.available_premium_years(conn)
+        premium_years = queries.available_premium_years(conn)
+        region_years = queries.available_region_years(conn)
     except Exception:
         database = "error"
+
+    issues: list[str] = []
+    if database != "ok":
+        issues.append("The database cannot be read.")
+    else:
+        if not premium_years:
+            issues.append("No premium data loaded yet; the first sync may still be running.")
+        if not region_years:
+            issues.append(
+                "No commune/postal-code data loaded, so locations cannot be resolved. "
+                "Check the sync log for the premium-region workbook."
+            )
     return schemas.HealthResponse(
         status="ok" if database == "ok" else "degraded",
         database=database,
-        data_loaded=bool(years),
-        premium_years=years,
+        data_loaded=not issues,
+        premium_years=premium_years,
+        region_years=region_years,
+        issues=issues,
     )
 
 

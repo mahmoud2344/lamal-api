@@ -243,8 +243,18 @@ class MetaResponse(BaseModel):
 class HealthResponse(BaseModel):
     status: str
     database: str
-    data_loaded: bool
+    data_loaded: bool = Field(
+        description="True once premiums and the commune/postal-code mapping are both loaded, "
+        "i.e. a lookup by postal code or BFS number can succeed."
+    )
     premium_years: list[int]
+    region_years: list[int] = Field(
+        description="Years of commune/postal-code to premium-region data loaded."
+    )
+    issues: list[str] = Field(
+        default_factory=list,
+        description="What is missing when data_loaded is false. Empty when all is well.",
+    )
 
 
 class ErrorResponse(BaseModel):

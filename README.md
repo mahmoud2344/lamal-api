@@ -48,8 +48,11 @@ curl -s http://localhost:8000/health
 ```
 
 ```json
-{ "status": "ok", "database": "ok", "data_loaded": true, "premium_years": [2027] }
+{ "status": "ok", "database": "ok", "data_loaded": true, "premium_years": [2027], "region_years": [2027], "issues": [] }
 ```
+
+`data_loaded` turns true once both the premiums and the commune/postal-code mapping are in;
+until then, `issues` says which is missing.
 
 Interactive API docs are at <http://localhost:8000/docs>.
 

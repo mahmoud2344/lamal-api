@@ -6,6 +6,11 @@ from typing import ClassVar
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import Engine, delete
+
+from lamal_api.api.app import create_app
+from lamal_api.config import Settings
+from lamal_api.db import models
 
 
 class TestHealth:
@@ -14,12 +19,43 @@ class TestHealth:
         assert body["status"] == "ok"
         assert body["data_loaded"] is True
         assert body["premium_years"] == [2026]
+        assert body["region_years"] == [2026]
+        assert body["issues"] == []
 
     def test_stays_healthy_before_the_first_sync(self, empty_client: TestClient) -> None:
         """An orchestrator must not kill a container that is still syncing."""
         response = empty_client.get("/health")
         assert response.status_code == 200
-        assert response.json()["data_loaded"] is False
+        body = response.json()
+        assert body["data_loaded"] is False
+        assert any("No premium data" in issue for issue in body["issues"])
+
+    def test_premiums_without_communes_are_not_loaded(
+        self, engine: Engine, settings: Settings
+    ) -> None:
+        """What a sync produced in October 2026, when priminfo moved the
+        premium-region workbook: premiums but no communes. Every lookup by
+        location fails, so the service must not call itself ready."""
+        with engine.begin() as conn:
+            conn.execute(delete(models.postal_code_commune))
+            conn.execute(delete(models.commune))
+        engine.dispose()
+        with TestClient(create_app(settings)) as client:
+            response = client.get("/health")
+            assert response.status_code == 200
+            body = response.json()
+            assert body["premium_years"] == [2026]
+            assert body["region_years"] == []
+            assert body["data_loaded"] is False
+            assert body["issues"] == [
+                "No commune/postal-code data loaded, so locations cannot be resolved. "
+                "Check the sync log for the premium-region workbook."
+            ]
+            lookup = client.get(
+                "/v1/premiums",
+                params={"postal_code": 1003, "birth_year": 1990, "accident_coverage": False},
+            )
+            assert lookup.status_code != 200
 
     def test_endpoints_report_no_data_clearly(self, empty_client: TestClient) -> None:
         response = empty_client.get(

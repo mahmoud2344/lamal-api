@@ -144,7 +144,9 @@ curl -s https://api.example.ch/v1/meta | grep -o '"premium_row_count":[0-9]*'
 ```
 
 `premium_row_count` around **220 000** means the sync worked. If it is `0`, the first sync is
-still running or failed — `docker compose logs -f` will say which.
+still running or failed — `docker compose logs -f` will say which. `/health` sums it up:
+`"data_loaded": true` only once both the premiums and the commune/postal-code mapping are in,
+and `issues` lists whatever is missing.
 
 ---
 
