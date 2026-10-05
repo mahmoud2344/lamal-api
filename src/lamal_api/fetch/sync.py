@@ -402,7 +402,14 @@ def _load_regions(
     """
     urls: dict[str, None] = {}
     for year in targets:
-        urls[priminfo.regions_url_for_year(client, year)] = None
+        url = priminfo.regions_url_for_year(client, year)
+        if url is None:
+            report.warnings.append(
+                f"no premium-region workbook found on priminfo.admin.ch for {year}; "
+                f"postal codes and communes cannot be resolved until one is loaded"
+            )
+            continue
+        urls[url] = None
 
     for index, url in enumerate(urls):
         try:

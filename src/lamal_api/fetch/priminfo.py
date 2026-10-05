@@ -6,52 +6,75 @@ The CKAN premium dataset does not contain:
    code cannot be turned into a premium region at all;
 2. **insurer names** — the premium file only carries BAG numbers.
 
-Both come from the priminfo.admin.ch download section. The region workbook sits
-at a stable URL; the insurer directory is date-stamped per year, so it is
-resolved by pattern first and by scraping the download page as a fallback.
+Both come from the priminfo.admin.ch download section, whose file names are not
+stable. In October 2026, for instance, ``/downloads/praemienregionen.xlsx``
+became ``/downloads/praemienregionen-2027.xlsx`` and the archived years moved
+out of ``/downloads/archiv/praemienregionen/``. So files are found the way a
+person would find them: by reading the links on the download pages. Known
+address patterns are only a fallback for when those pages cannot be read.
 """
 
 from __future__ import annotations
 
 import logging
 import re
-from dataclasses import dataclass
 
 import httpx
 
 log = logging.getLogger(__name__)
 
 PRIMINFO_BASE = "https://www.priminfo.admin.ch"
+#: Lists the files for the premium year currently on sale.
 DOWNLOADS_PAGE = f"{PRIMINFO_BASE}/de/downloads/aktuell"
+#: Lists the files for past years.
+ARCHIVE_PAGE = f"{PRIMINFO_BASE}/de/downloads/archiv"
 
-#: Premium regions valid for the current premium year.
-REGIONS_URL = f"{PRIMINFO_BASE}/downloads/praemienregionen.xlsx"
-
-#: Archived region workbooks, e.g. .../praemienregionen_2018.xls
-REGIONS_ARCHIVE_TEMPLATE = (
-    f"{PRIMINFO_BASE}/downloads/archiv/praemienregionen/praemienregionen_{{year}}.{{ext}}"
+_REGIONS_HREF_RE = re.compile(
+    r"""href=["']([^"']*praemienregionen[^"']*\.xlsx)["']""",
+    re.IGNORECASE,
 )
-
 _INSURER_HREF_RE = re.compile(
     r"""href=["']([^"']*zugelassene-krankenversicherer[^"']*\.xlsx)["']""",
     re.IGNORECASE,
 )
 
+#: Addresses priminfo has used for one year's region workbook, newest first.
+_REGIONS_YEAR_PATTERNS = (
+    "/downloads/praemienregionen-{year}.xlsx",  # the current year, since 2026-10
+    "/downloads/praemienregionen_{year}.xlsx",  # past years, since 2026-10
+    "/downloads/archiv/praemienregionen/praemienregionen_{year}.xlsx",  # until 2026-09
+)
+#: The undated workbook for the current year, used until 2026-09.
+_REGIONS_UNDATED = "/downloads/praemienregionen.xlsx"
 
-@dataclass(frozen=True)
-class PriminfoSources:
-    """Resolved priminfo URLs for one sync run."""
 
-    regions_url: str
-    insurers_url: str | None
+def regions_url_for_year(client: httpx.Client, premium_year: int) -> str | None:
+    """Find the premium-region workbook that applies to ``premium_year``.
 
+    In order: a workbook for that year linked from the current or archive
+    download page; one at a known address for that year; then the workbook for
+    the year currently on sale. That last fallback is right more often than not,
+    because communes rarely change region, and the sync files a workbook under
+    the year it says it is valid for, whatever year it was fetched for.
 
-def resolve(client: httpx.Client, premium_year: int) -> PriminfoSources:
-    """Resolve the priminfo files needed for ``premium_year``."""
-    return PriminfoSources(
-        regions_url=REGIONS_URL,
-        insurers_url=find_insurer_directory_url(client, premium_year),
-    )
+    Returns ``None`` when nothing can be found, so the caller can say so.
+    """
+    current = _links(client, DOWNLOADS_PAGE, _REGIONS_HREF_RE)
+    archived = _links(client, ARCHIVE_PAGE, _REGIONS_HREF_RE)
+    for href in (*current, *archived):
+        if str(premium_year) in href:
+            return href
+
+    for pattern in _REGIONS_YEAR_PATTERNS:
+        candidate = PRIMINFO_BASE + pattern.format(year=premium_year)
+        if _exists(client, candidate):
+            return candidate
+
+    if current:
+        log.info("no region workbook for %d on priminfo; using %s", premium_year, current[0])
+        return current[0]
+    undated = PRIMINFO_BASE + _REGIONS_UNDATED
+    return undated if _exists(client, undated) else None
 
 
 def find_insurer_directory_url(client: httpx.Client, premium_year: int) -> str | None:
@@ -65,14 +88,7 @@ def find_insurer_directory_url(client: httpx.Client, premium_year: int) -> str |
     if _exists(client, direct):
         return direct
 
-    try:
-        response = client.get(DOWNLOADS_PAGE)
-        response.raise_for_status()
-    except httpx.HTTPError as exc:
-        log.warning("could not read the priminfo download page: %s", exc)
-        return None
-
-    matches = _INSURER_HREF_RE.findall(response.text)
+    matches = _links(client, DOWNLOADS_PAGE, _INSURER_HREF_RE)
     if not matches:
         log.warning("no insurer directory link found on %s", DOWNLOADS_PAGE)
         return None
@@ -80,22 +96,19 @@ def find_insurer_directory_url(client: httpx.Client, premium_year: int) -> str |
     # Prefer a link that mentions the target year, else take the newest.
     for href in matches:
         if str(premium_year) in href:
-            return _absolute(href)
-    return _absolute(sorted(matches)[-1])
+            return href
+    return sorted(matches)[-1]
 
 
-def regions_url_for_year(client: httpx.Client, premium_year: int) -> str:
-    """Region workbook for a given year, falling back to the live file.
-
-    The live workbook always describes the year currently on sale. Older years
-    live under ``/downloads/archiv/praemienregionen/``, published as ``.xlsx``
-    for recent years and ``.xls`` further back; only ``.xlsx`` can be read, so
-    an ``.xls``-only year falls back to the current mapping.
-    """
-    candidate = REGIONS_ARCHIVE_TEMPLATE.format(year=premium_year, ext="xlsx")
-    if _exists(client, candidate):
-        return candidate
-    return REGIONS_URL
+def _links(client: httpx.Client, page: str, pattern: re.Pattern[str]) -> list[str]:
+    """Absolute URLs of the links on ``page`` matching ``pattern``, in page order."""
+    try:
+        response = client.get(page)
+        response.raise_for_status()
+    except httpx.HTTPError as exc:
+        log.warning("could not read %s: %s", page, exc)
+        return []
+    return list(dict.fromkeys(_absolute(href) for href in pattern.findall(response.text)))
 
 
 def _exists(client: httpx.Client, url: str) -> bool:

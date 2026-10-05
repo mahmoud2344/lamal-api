@@ -5,8 +5,10 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+import httpx
 import pytest
 
+from lamal_api.fetch import priminfo
 from lamal_api.fetch.ckan import Catalog, CkanResource, decode_resource_path
 from lamal_api.fetch.normalize import (
     SourceFormatError,
@@ -168,6 +170,61 @@ class TestYearResolution:
     def test_nothing_to_load_fails_loudly(self) -> None:
         with pytest.raises(SourceFormatError, match="no yearly archive"):
             resolve_years(None, None, [])
+
+
+class TestPriminfoDiscovery:
+    """priminfo renames its files from time to time, so they are found through
+    the links on its download pages. Link formats as served in October 2026."""
+
+    CURRENT_PAGE = (
+        '<a href="/downloads/praemienregionen-2027.xlsx">Prämienregionen 2027</a>'
+        '<a href="/downloads/zugelassene-krankenversicherer-2026-10.xlsx">Versicherer</a>'
+    )
+    ARCHIVE_PAGE = (
+        '<a href="/downloads/praemienregionen_2025.xlsx">2025</a>'
+        '<a href="/downloads/praemienregionen_2026.xlsx">2026</a>'
+    )
+    BASE = "https://www.priminfo.admin.ch"
+
+    def _client(self, pages: dict[str, str], files: frozenset[str] = frozenset()) -> httpx.Client:
+        def handler(request: httpx.Request) -> httpx.Response:
+            url = str(request.url)
+            if url in pages:
+                return httpx.Response(200, text=pages[url])
+            if url in files:
+                return httpx.Response(200)
+            return httpx.Response(404)
+
+        return httpx.Client(transport=httpx.MockTransport(handler))
+
+    def _site(self) -> httpx.Client:
+        return self._client(
+            {priminfo.DOWNLOADS_PAGE: self.CURRENT_PAGE, priminfo.ARCHIVE_PAGE: self.ARCHIVE_PAGE}
+        )
+
+    def test_current_year_comes_from_the_current_page(self) -> None:
+        url = priminfo.regions_url_for_year(self._site(), 2027)
+        assert url == f"{self.BASE}/downloads/praemienregionen-2027.xlsx"
+
+    def test_past_year_comes_from_the_archive_page(self) -> None:
+        url = priminfo.regions_url_for_year(self._site(), 2026)
+        assert url == f"{self.BASE}/downloads/praemienregionen_2026.xlsx"
+
+    def test_unlisted_year_falls_back_to_the_current_workbook(self) -> None:
+        url = priminfo.regions_url_for_year(self._site(), 2003)
+        assert url == f"{self.BASE}/downloads/praemienregionen-2027.xlsx"
+
+    def test_known_addresses_are_tried_when_the_pages_are_down(self) -> None:
+        file = f"{self.BASE}/downloads/praemienregionen-2027.xlsx"
+        client = self._client(pages={}, files=frozenset({file}))
+        assert priminfo.regions_url_for_year(client, 2027) == file
+
+    def test_nothing_found_is_reported_as_none(self) -> None:
+        assert priminfo.regions_url_for_year(self._client(pages={}), 2027) is None
+
+    def test_insurer_directory_comes_from_the_current_page(self) -> None:
+        url = priminfo.find_insurer_directory_url(self._site(), 2027)
+        assert url == f"{self.BASE}/downloads/zugelassene-krankenversicherer-2026-10.xlsx"
 
 
 class TestCkanDiscovery:
